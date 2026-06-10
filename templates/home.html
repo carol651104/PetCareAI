@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>PetCare AI</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background: #fff7f7;
+            font-family: "Microsoft JhengHei", sans-serif;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #ffb6c1, #ffe4e1);
+            border-radius: 24px;
+            padding: 50px;
+            margin-top: 40px;
+        }
+
+        .card {
+            border-radius: 20px;
+            border: none;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        }
+
+        textarea {
+            resize: none;
+        }
+
+        .answer-box {
+            white-space: pre-wrap;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="hero text-center">
+        <h1 class="fw-bold">PetCare AI</h1>
+        <p class="lead">智慧寵物健康管理 SaaS 平台</p>
+        <p>提供寵物症狀初步分析、照護建議與健康管理服務</p>
+    </div>
+
+    <div class="card p-4 mt-4">
+        <h4 class="fw-bold mb-3">AI 寵物照護助理</h4>
+
+        <form action="/ai" method="post">
+            <label class="form-label">請描述寵物目前的狀況</label>
+
+            <textarea
+                name="symptom"
+                class="form-control"
+                rows="6"
+                placeholder="例如：我家貓咪今天一直打噴嚏，精神還可以，食慾正常。"
+                required></textarea>
+
+            <button class="btn btn-danger mt-3 w-100" type="submit">
+                開始分析
+            </button>
+        </form>
+    </div>
+
+    {% if answer %}
+    <div class="card p-4 mt-4 mb-5">
+        <h4 class="fw-bold mb-3">AI 初步照護建議</h4>
+        <div class="answer-box">
+            {{ answer }}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+</body>
+</html>
