@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>註冊帳號 - PetCareAI</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: "Microsoft JhengHei", sans-serif;
+            background: #faf7f4;
+            color: #222;
+        }
+
+        .container {
+            max-width: 520px;
+            margin: 80px auto;
+            background: white;
+            padding: 42px;
+            border-radius: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+        }
+
+        h1 {
+            color: #b87333;
+            margin-bottom: 12px;
+        }
+
+        p {
+            line-height: 1.7;
+            color: #555;
+        }
+
+        label {
+            display: block;
+            margin-top: 18px;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 13px;
+            margin-top: 8px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 24px;
+            padding: 13px;
+            border: none;
+            border-radius: 999px;
+            background: #8eb4f7;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #75a1ef;
+        }
+
+        a {
+            color: #b87333;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .links {
+            margin-top: 22px;
+            line-height: 1.8;
+        }
+
+        .flash {
+            background: #fff6e8;
+            color: #8a4f1d;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 18px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>註冊 PetCareAI</h1>
+    <p>建立帳號後，即可開始管理你的寵物健康資料。</p>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="flash">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <label>使用者名稱</label>
+        <input type="text" name="username" placeholder="例如：Carol" required>
+
+        <label>Email</label>
+        <input type="email" name="email" placeholder="example@email.com" required>
+
+        <label>密碼</label>
+        <input type="password" name="password" placeholder="請輸入密碼" required>
+
+        <button type="submit">註冊</button>
+    </form>
+
+    <div class="links">
+        已經有帳號？<a href="/login">前往登入</a><br>
+        <a href="/">返回首頁</a>
+    </div>
+</div>
+
+</body>
+</html>
