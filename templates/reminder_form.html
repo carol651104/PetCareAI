@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}提醒事項{% endblock %}
+
+{% block content %}
+
+<div class="card" style="max-width:760px; margin:0 auto;">
+    <h1>{% if mode == "add" %}新增提醒事項{% else %}修改提醒事項{% endif %}</h1>
+    <p class="muted">寵物：{{ pet.name }}</p>
+
+    <form method="POST">
+        <label>提醒類型</label>
+        <select name="reminder_type" required>
+            {% set options = ["疫苗", "驅蟲", "健檢", "回診", "用藥", "洗牙", "其他"] %}
+            {% for item in options %}
+                <option value="{{ item }}" {% if reminder and reminder.reminder_type == item %}selected{% endif %}>{{ item }}</option>
+            {% endfor %}
+        </select>
+
+        <label>提醒日期</label>
+        <input type="date" name="reminder_date" value="{{ reminder.reminder_date if reminder else '' }}" required>
+
+        <label>備註</label>
+        <textarea name="note">{{ reminder.note if reminder else '' }}</textarea>
+
+        {% if reminder %}
+            <label>
+                <input type="checkbox" name="is_done" style="width:auto;" {% if reminder.is_done %}checked{% endif %}>
+                已完成
+            </label>
+        {% endif %}
+
+        <button class="btn btn-brown" type="submit">儲存</button>
+        <a class="btn" href="/pets/{{ pet.id }}">返回寵物詳細資料</a>
+    </form>
+</div>
+
+{% endblock %}
