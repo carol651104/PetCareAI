@@ -57,10 +57,15 @@
             cursor: pointer;
             margin: 6px 6px 6px 0;
             font-size: 14px;
+            width: fit-content;
         }
 
         .btn:hover {
             background: #75a1ef;
+            color: white;
+        }
+
+        .btn:visited {
             color: white;
         }
 
@@ -98,6 +103,26 @@
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 22px;
+        }
+
+        /*
+           只針對 Dashboard 與功能總覽這種卡片排版做對齊。
+           不影響寵物詳細頁、表單頁、報告頁。
+        */
+        .grid-4 > .card {
+            min-height: 210px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .grid-4 > .card .btn {
+            margin-top: auto;
+        }
+
+        .feature-icon {
+            font-size: 42px;
+            margin-bottom: 16px;
+            line-height: 1;
         }
 
         label {
