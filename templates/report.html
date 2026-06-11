@@ -1,93 +1,112 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-    <meta charset="UTF-8">
-    <title>健康報告匯出</title>
-    <style>
+{% extends "base.html" %}
+
+{% block title %}健康報告匯出{% endblock %}
+
+{% block content %}
+
+<style>
+    @media print {
+        .nav, .btn {
+            display: none !important;
+        }
+
         body {
-            font-family: "Microsoft JhengHei", sans-serif;
-            background: #faf7f4;
-            padding: 50px;
-            color: #222;
-        }
-
-        .box {
-            max-width: 850px;
-            margin: auto;
             background: white;
-            padding: 42px;
-            border-radius: 24px;
-            box-shadow: 0 8px 24px rgba(0,0,0,.06);
         }
 
-        h1 {
-            color: #b87333;
+        .card {
+            box-shadow: none;
+            border: 1px solid #ddd;
         }
+    }
+</style>
 
-        p {
-            line-height: 1.8;
-            font-size: 17px;
-        }
+<h1>健康報告匯出</h1>
+<p class="muted">整合寵物基本資料、健康紀錄、就醫紀錄、提醒事項與 AI 建議。可使用瀏覽器列印或另存 PDF。</p>
 
-        .report {
-            border: 2px solid #d8e4ff;
-            border-radius: 20px;
-            padding: 28px;
-            margin-top: 24px;
-            line-height: 1.9;
-            background: #fbfdff;
-        }
+<button class="btn btn-brown" onclick="window.print()">列印 / 匯出 PDF</button>
 
-        button, a {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 12px 22px;
-            background: #8eb4f7;
-            color: white;
-            border: none;
-            border-radius: 999px;
-            text-decoration: none;
-            cursor: pointer;
-            font-size: 15px;
-        }
+{% if pets %}
+    {% for pet in pets %}
+        <div class="card">
+            <h2>{{ pet.name }} 健康報告</h2>
 
-        @media print {
-            body {
-                background: white;
-            }
+            <h3>基本資料</h3>
+            <p>
+                物種：{{ pet.species }}<br>
+                品種：{{ pet.breed or "未填寫" }}<br>
+                性別：{{ pet.gender or "未填寫" }}<br>
+                年齡：{{ pet.age or "未填寫" }}<br>
+                體重：{{ pet.weight or "未填寫" }} kg<br>
+                備註：{{ pet.note or "無" }}
+            </p>
 
-            a, button {
-                display: none;
-            }
+            <h3>健康紀錄</h3>
+            {% if pet.health_records %}
+                {% for record in pet.health_records %}
+                    <div class="record">
+                        日期：{{ record.record_date }}<br>
+                        體重：{{ record.weight or "未填寫" }} kg<br>
+                        食慾：{{ record.appetite or "未填寫" }}<br>
+                        活動量：{{ record.activity or "未填寫" }}<br>
+                        症狀：{{ record.symptoms or "無" }}<br>
+                        用藥：{{ record.medication or "無" }}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="muted">無健康紀錄。</p>
+            {% endif %}
 
-            .box {
-                box-shadow: none;
-            }
-        }
-    </style>
-</head>
-<body>
-<div class="box">
-    <h1>健康報告匯出</h1>
+            <h3>就醫紀錄</h3>
+            {% if pet.medical_records %}
+                {% for record in pet.medical_records %}
+                    <div class="record">
+                        日期：{{ record.visit_date }}<br>
+                        診所：{{ record.clinic_name or "未填寫" }}<br>
+                        診斷：{{ record.diagnosis or "未填寫" }}<br>
+                        藥物：{{ record.medicine or "無" }}<br>
+                        醫囑：{{ record.doctor_advice or "無" }}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="muted">無就醫紀錄。</p>
+            {% endif %}
 
-    <p>
-        將寵物基本資料、健康紀錄、疫苗紀錄與就醫紀錄整理成報告，方便飼主回診或提供給獸醫參考。
-    </p>
-
-    <div class="report">
-        <h2>PetCareAI 健康報告</h2>
-        寵物名稱：布丁<br>
-        物種：貓<br>
-        年齡：3 歲<br>
-        體重：4.5 kg<br>
-        最近健康狀態：食慾正常、活動量正常<br>
-        最近疫苗日期：2026/07/01<br>
-        最近就醫紀錄：腸胃不適，已服藥觀察<br>
-        AI 初步建議：目前可持續觀察，若症狀加重應安排就醫。
+            <h3>提醒事項</h3>
+            {% if pet.reminders %}
+                {% for reminder in pet.reminders %}
+                    <div class="record">
+                        類型：{{ reminder.reminder_type }}<br>
+                        日期：{{ reminder.reminder_date }}<br>
+                        狀態：{% if reminder.is_done %}已完成{% else %}待完成{% endif %}<br>
+                        備註：{{ reminder.note or "無" }}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="muted">無提醒事項。</p>
+            {% endif %}
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="card">
+        <p class="muted">目前沒有寵物資料可以產生報告。</p>
     </div>
+{% endif %}
 
-    <button onclick="window.print()">列印 / 匯出展示</button>
-    <a href="/features">返回功能列表</a>
+{% if ai_records %}
+<div class="card">
+    <h2>AI 諮詢紀錄</h2>
+    {% for record in ai_records %}
+        <div class="record">
+            時間：{{ record.created_at }}<br>
+            寵物：{{ record.pet_name }}<br>
+            症狀：{{ record.symptom }}<br>
+            風險：{{ record.risk_score }} 分｜{{ record.risk_level }}<br>
+            建議：<br>
+            <div style="white-space: pre-wrap;">{{ record.ai_answer }}</div>
+        </div>
+    {% endfor %}
 </div>
-</body>
-</html>
+{% endif %}
+
+{% endblock %}
