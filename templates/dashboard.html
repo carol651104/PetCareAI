@@ -30,6 +30,10 @@
             margin-bottom: 8px;
         }
 
+        h3 {
+            color: #b87333;
+        }
+
         .subtitle {
             color: #555;
             line-height: 1.8;
@@ -47,8 +51,17 @@
             margin-top: 8px;
         }
 
+        .btn:hover {
+            background: #75a1ef;
+            color: white;
+        }
+
         .btn-brown {
             background: #b87333;
+        }
+
+        .btn-brown:hover {
+            background: #9f622c;
         }
 
         .grid {
@@ -63,19 +76,26 @@
             padding: 28px;
             border-radius: 22px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.06);
-            min-height: 170px;
+            min-height: 190px;
+            display: flex;
+            flex-direction: column;
         }
 
         .card h3 {
-            color: #b87333;
             margin-bottom: 12px;
+        }
+
+        .card p {
+            line-height: 1.7;
+            color: #555;
         }
 
         .number {
             font-size: 36px;
             font-weight: bold;
             color: #8eb4f7;
-            margin-top: 12px;
+            margin-top: auto;
+            margin-bottom: 10px;
         }
 
         .section {
@@ -102,6 +122,18 @@
             color: #b87333;
             font-weight: bold;
             text-decoration: none;
+        }
+
+        .quick-actions {
+            margin-top: 18px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .hint {
+            color: #666;
+            line-height: 1.8;
         }
 
         @media (max-width: 800px) {
@@ -144,14 +176,16 @@
 
         <div class="card">
             <h3>健康紀錄</h3>
-            <p>之後可追蹤體重、食慾、活動量與症狀。</p>
-            <div class="number">0</div>
+            <p>追蹤體重、食慾、活動量、症狀與用藥情況。</p>
+            <div class="number">{{ total_health_records }}</div>
+            <a class="btn" href="/health-records">查看健康紀錄</a>
         </div>
 
         <div class="card">
             <h3>提醒事項</h3>
             <p>之後可管理疫苗、驅蟲、健檢與回診提醒。</p>
             <div class="number">0</div>
+            <a class="btn" href="/features">查看規劃功能</a>
         </div>
     </div>
 
@@ -164,14 +198,21 @@
                     <div class="pet-item">
                         {{ pet.name }}｜{{ pet.species }}｜
                         <a href="/pets/{{ pet.id }}">查看詳細資料</a>
+                        ｜<a href="/pets/{{ pet.id }}/health/add">新增健康紀錄</a>
                     </div>
                 {% endfor %}
             </div>
         {% else %}
-            <p>目前尚未新增寵物資料。</p>
+            <p class="hint">
+                目前尚未新增寵物資料。請先建立第一筆寵物資料，之後就可以新增健康紀錄。
+            </p>
         {% endif %}
 
-        <a class="btn" href="/pets/add">新增寵物</a>
+        <div class="quick-actions">
+            <a class="btn" href="/pets/add">新增寵物</a>
+            <a class="btn btn-brown" href="/pets">寵物資料管理</a>
+            <a class="btn" href="/health-records">查看所有健康紀錄</a>
+        </div>
     </div>
 </div>
 
