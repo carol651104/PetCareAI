@@ -52,6 +52,13 @@
             resize: vertical;
         }
 
+        .hint {
+            font-size: 14px;
+            color: #777;
+            margin-top: 6px;
+            line-height: 1.6;
+        }
+
         .actions {
             margin-top: 26px;
         }
@@ -97,7 +104,7 @@
         {% endif %}
     {% endwith %}
 
-    <form method="POST">
+    <form method="POST" enctype="multipart/form-data">
         <label>寵物名稱 *</label>
         <input type="text" name="name" placeholder="例如：布丁" required>
 
@@ -107,11 +114,22 @@
             <option value="貓">貓</option>
             <option value="狗">狗</option>
             <option value="兔子">兔子</option>
+            <option value="倉鼠">倉鼠</option>
+            <option value="天竺鼠">天竺鼠</option>
+            <option value="鳥類">鳥類</option>
+            <option value="鸚鵡">鸚鵡</option>
+            <option value="烏龜">烏龜</option>
+            <option value="魚類">魚類</option>
+            <option value="蜥蜴">蜥蜴</option>
+            <option value="蛇">蛇</option>
+            <option value="刺蝟">刺蝟</option>
+            <option value="蜜袋鼯">蜜袋鼯</option>
+            <option value="雪貂">雪貂</option>
             <option value="其他">其他</option>
         </select>
 
         <label>品種</label>
-        <input type="text" name="breed" placeholder="例如：米克斯、柴犬、英短">
+        <input type="text" name="breed" placeholder="例如：米克斯、柴犬、英短、虎皮鸚鵡">
 
         <label>性別</label>
         <select name="gender">
@@ -122,13 +140,14 @@
         </select>
 
         <label>年齡</label>
-        <input type="text" name="age" placeholder="例如：3 歲">
+        <input type="text" name="age" placeholder="例如：3 歲、6 個月">
 
         <label>體重 kg</label>
         <input type="number" step="0.1" name="weight" placeholder="例如：4.5">
 
-        <label>照片網址</label>
-        <input type="url" name="photo_url" placeholder="可先留空，未來可改成圖片上傳">
+        <label>上傳照片</label>
+        <input type="file" name="photo_file" accept="image/png, image/jpeg, image/jpg, image/gif, image/webp">
+        <div class="hint">支援 png、jpg、jpeg、gif、webp。可以先不傳。</div>
 
         <label>備註</label>
         <textarea name="note" placeholder="例如：容易緊張、對某些食物過敏、定期服藥等"></textarea>
