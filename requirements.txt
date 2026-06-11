@@ -1,3 +1,6 @@
-flask
-groq
+Flask
 gunicorn
+groq
+Flask-SQLAlchemy
+Flask-Login
+Werkzeug
