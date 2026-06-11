@@ -1,1 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>寵物資料管理</title>
+    <style>
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            background: #faf7f4;
+            padding: 50px;
+            color: #222;
+        }
 
+        .box {
+            max-width: 850px;
+            margin: auto;
+            background: white;
+            padding: 42px;
+            border-radius: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,.06);
+        }
+
+        h1 {
+            color: #b87333;
+        }
+
+        p {
+            line-height: 1.8;
+            font-size: 17px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 14px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .card {
+            background: #f6f8ff;
+            padding: 22px;
+            border-radius: 18px;
+            margin-top: 22px;
+            line-height: 1.8;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 22px;
+            background: #8eb4f7;
+            color: white;
+            border-radius: 999px;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h1>寵物資料管理</h1>
+
+    <p>
+        飼主可以建立寵物基本資料，包含寵物姓名、物種、品種、年齡、性別、體重與照片，作為後續健康紀錄與就醫紀錄的基礎。
+    </p>
+
+    <input type="text" placeholder="寵物名稱，例如：布丁">
+
+    <select>
+        <option>貓</option>
+        <option>狗</option>
+        <option>其他</option>
+    </select>
+
+    <input type="text" placeholder="品種">
+    <input type="text" placeholder="年齡，例如：3 歲">
+    <input type="text" placeholder="體重，例如：4.5 kg">
+
+    <div class="card">
+        <strong>展示資料：</strong><br>
+        寵物名稱：布丁<br>
+        物種：貓<br>
+        年齡：3 歲<br>
+        體重：4.5 kg<br>
+        狀態：資料已建立
+    </div>
+
+    <a href="/features">返回功能列表</a>
+</div>
+</body>
+</html>
