@@ -1,1 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>健康趨勢儀表板</title>
+    <style>
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            background: #faf7f4;
+            padding: 50px;
+            color: #222;
+        }
 
+        .box {
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 42px;
+            border-radius: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,.06);
+        }
+
+        h1 {
+            color: #b87333;
+        }
+
+        p {
+            line-height: 1.8;
+            font-size: 17px;
+        }
+
+        .chart {
+            display: flex;
+            align-items: end;
+            gap: 18px;
+            height: 260px;
+            background: #f6f8ff;
+            padding: 30px;
+            border-radius: 20px;
+            margin-top: 24px;
+        }
+
+        .bar {
+            width: 60px;
+            background: #8eb4f7;
+            border-radius: 12px 12px 0 0;
+            text-align: center;
+            color: white;
+            padding-top: 8px;
+            font-weight: bold;
+        }
+
+        .b1 { height: 90px; }
+        .b2 { height: 120px; }
+        .b3 { height: 150px; }
+        .b4 { height: 135px; }
+        .b5 { height: 170px; }
+
+        .summary {
+            background: #fff6e8;
+            padding: 20px;
+            border-radius: 18px;
+            margin-top: 24px;
+            line-height: 1.8;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 22px;
+            background: #8eb4f7;
+            color: white;
+            border-radius: 999px;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h1>健康趨勢儀表板</h1>
+
+    <p>
+        透過圖表呈現寵物體重、健康狀態與照護紀錄變化，讓飼主能更直覺掌握長期健康趨勢。
+    </p>
+
+    <div class="chart">
+        <div class="bar b1">4.2</div>
+        <div class="bar b2">4.3</div>
+        <div class="bar b3">4.5</div>
+        <div class="bar b4">4.4</div>
+        <div class="bar b5">4.6</div>
+    </div>
+
+    <div class="summary">
+        <strong>展示說明：</strong><br>
+        此圖為近五次體重紀錄變化，未來可串接資料庫，自動產生寵物健康趨勢圖表。
+    </div>
+
+    <a href="/features">返回功能列表</a>
+</div>
+</body>
+</html>
