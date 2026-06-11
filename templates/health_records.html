@@ -1,1 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>健康紀錄管理</title>
+    <style>
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            background: #faf7f4;
+            padding: 50px;
+            color: #222;
+        }
 
+        .box {
+            max-width: 850px;
+            margin: auto;
+            background: white;
+            padding: 42px;
+            border-radius: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,.06);
+        }
+
+        h1 {
+            color: #b87333;
+        }
+
+        p {
+            line-height: 1.8;
+            font-size: 17px;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 14px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            min-height: 100px;
+        }
+
+        .card {
+            background: #f6f8ff;
+            padding: 22px;
+            border-radius: 18px;
+            margin-top: 22px;
+            line-height: 1.8;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 22px;
+            background: #8eb4f7;
+            color: white;
+            border-radius: 999px;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h1>健康紀錄管理</h1>
+
+    <p>
+        此功能可紀錄寵物的日常健康狀況，例如體重、食慾、活動量、症狀與用藥情況，協助飼主長期追蹤寵物健康變化。
+    </p>
+
+    <input type="date">
+    <input type="text" placeholder="體重，例如：4.5 kg">
+
+    <select>
+        <option>食慾正常</option>
+        <option>食慾下降</option>
+        <option>幾乎不吃</option>
+    </select>
+
+    <select>
+        <option>活動量正常</option>
+        <option>活動量下降</option>
+        <option>精神很好</option>
+    </select>
+
+    <textarea placeholder="症狀紀錄，例如：嘔吐、拉肚子、精神不佳"></textarea>
+    <textarea placeholder="用藥情況"></textarea>
+
+    <div class="card">
+        <strong>展示紀錄：</strong><br>
+        日期：2026/06/11<br>
+        體重：4.5 kg<br>
+        食慾：正常<br>
+        活動量：正常<br>
+        症狀：無明顯異常
+    </div>
+
+    <a href="/features">返回功能列表</a>
+</div>
+</body>
+</html>
