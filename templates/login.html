@@ -1,1 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>會員登入與帳號管理</title>
+    <style>
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            background: #faf7f4;
+            padding: 50px;
+            color: #222;
+        }
 
+        .box {
+            max-width: 760px;
+            margin: auto;
+            background: white;
+            padding: 42px;
+            border-radius: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,.06);
+        }
+
+        h1 {
+            color: #b87333;
+        }
+
+        p {
+            line-height: 1.8;
+            font-size: 17px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        button, a {
+            display: inline-block;
+            margin-top: 16px;
+            padding: 12px 22px;
+            background: #8eb4f7;
+            color: white;
+            border: none;
+            border-radius: 999px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .note {
+            margin-top: 26px;
+            background: #f6f8ff;
+            padding: 18px;
+            border-radius: 16px;
+        }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h1>會員登入與帳號管理</h1>
+
+    <p>
+        此功能讓不同飼主可以建立帳號，登入後管理自己的寵物資料、健康紀錄、提醒事項與 AI 健康建議結果。
+    </p>
+
+    <input type="email" placeholder="電子郵件">
+    <input type="password" placeholder="密碼">
+
+    <button>登入展示</button>
+
+    <div class="note">
+        <strong>目前狀態：</strong><br>
+        此頁為前端展示版，未來將加入註冊、登入、登出、密碼驗證與使用者資料庫。
+    </div>
+
+    <a href="/features">返回功能列表</a>
+</div>
+</body>
+</html>
