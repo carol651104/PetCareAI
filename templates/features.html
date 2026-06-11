@@ -1,182 +1,60 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-    <meta charset="UTF-8">
-    <title>PetCareAI 主要功能</title>
-    <style>
-        body {
-            margin: 0;
-            font-family: "Microsoft JhengHei", sans-serif;
-            background: #faf7f4;
-            color: #222;
-        }
+{% extends "base.html" %}
 
-        .container {
-            max-width: 1100px;
-            margin: auto;
-            padding: 50px 24px;
-        }
+{% block title %}PetCareAI 主要功能{% endblock %}
 
-        h1 {
-            color: #b87333;
-            font-size: 42px;
-            margin-bottom: 10px;
-        }
+{% block content %}
 
-        .subtitle {
-            font-size: 18px;
-            color: #555;
-            margin-bottom: 40px;
-            line-height: 1.8;
-        }
+<h1>PetCareAI 主要功能</h1>
+<p class="muted">以寵物健康管理為核心，整合資料紀錄、健康提醒、AI 建議、趨勢分析與報告匯出功能。</p>
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 22px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 22px;
-            padding: 24px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
-            min-height: 230px;
-            transition: 0.2s;
-            
-            display: flex;
-            flex-direction: column;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-        }
-
-        .icon {
-            font-size: 42px;
-            margin-bottom: 16px;
-        }
-
-        h3 {
-            color: #b87333;
-            margin-bottom: 12px;
-        }
-
-        p {
-            line-height: 1.7;
-            color: #333;
-            font-size: 15px;
-        }
-
-        a {
-            display: inline-block;
-            margin-top: 12px;
-            color: white;
-            background: #8eb4f7;
-            padding: 9px 16px;
-            border-radius: 999px;
-            text-decoration: none;
-            font-size: 14px;
-            width: fit-content;
-        }
-        
-        .card a {
-            margin-top: auto;
-        }
-
-        .card a:visited {
-            color: white;
-            background: #8eb4f7;
-        }
-
-        .back {
-            margin-top: 40px;
-            background: #b87333;
-        }
-
-        @media (max-width: 900px) {
-            .grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 560px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
-
-            h1 {
-                font-size: 34px;
-            }
-        }
-    </style>
-</head>
-<body>
-<div class="container">
-    <h1>PetCareAI 主要功能</h1>
-    <div class="subtitle">
-        以寵物健康管理為核心，整合資料紀錄、健康提醒、AI 建議、趨勢分析與報告匯出功能。
+<div class="grid-4">
+    <div class="card">
+        <h3>會員登入與帳號管理</h3>
+        <p class="muted">建立帳號並管理自己的寵物健康資料。</p>
+        <a class="btn" href="/login">登入</a>
     </div>
 
-    <div class="grid">
-        <div class="card">
-            <div class="icon">👤</div>
-            <h3>會員登入與帳號管理</h3>
-            <p>讓不同飼主可以建立帳號，管理自己的寵物資料與健康紀錄。</p>
-            <a href="/login">查看功能</a>
-        </div>
-
-        <div class="card">
-            <div class="icon">🐾</div>
-            <h3>寵物資料管理</h3>
-            <p>建立寵物基本資料，包含姓名、品種、年齡、性別、體重與照片。</p>
-            <a href="/pets">查看功能</a>
-        </div>
-
-        <div class="card">
-            <div class="icon">📋</div>
-            <h3>健康紀錄管理</h3>
-            <p>紀錄體重、食慾、活動量、症狀與用藥情況，方便長期追蹤。</p>
-            <a href="/health-records">查看功能</a>
-        </div>
-
-        <div class="card">
-            <div class="icon">📅</div>
-            <h3>疫苗與驅蟲提醒</h3>
-            <p>設定疫苗、驅蟲、健檢與回診時間，降低飼主遺忘機率。</p>
-            <a href="/reminders">查看功能</a>
-        </div>
-
-        <div class="card">
-            <div class="icon">🏥</div>
-            <h3>就醫紀錄管理</h3>
-            <p>保存看診日期、診所、診斷結果、藥物與醫囑，方便回診查詢。</p>
-            <a href="/medical-records">查看功能</a>
-        </div>
-
-        <div class="card">
-            <div class="icon">🤖</div>
-            <h3>AI 初步健康建議</h3>
-            <p>使用者輸入寵物症狀後，系統提供初步照護方向與就醫建議。</p>
-            <a href="/">開始使用</a>
-        </div>
-
-        <div class="card">
-            <div class="icon">📊</div>
-            <h3>健康趨勢儀表板</h3>
-            <p>透過圖表顯示寵物體重、健康狀態與照護紀錄的長期變化。</p>
-            <a href="/dashboard">查看功能</a>
-        </div>
-
-        <div class="card">
-            <div class="icon">📄</div>
-            <h3>健康報告匯出</h3>
-            <p>將基本資料、健康紀錄、疫苗紀錄與就醫紀錄整理成報告。</p>
-            <a href="/report">查看功能</a>
-        </div>
+    <div class="card">
+        <h3>寵物資料管理</h3>
+        <p class="muted">新增、查看、修改與刪除寵物基本資料。</p>
+        <a class="btn" href="/pets">查看功能</a>
     </div>
 
-    <a class="back" href="/">返回首頁</a>
+    <div class="card">
+        <h3>健康紀錄管理</h3>
+        <p class="muted">紀錄體重、食慾、活動量、症狀與用藥情況。</p>
+        <a class="btn" href="/health-records">查看功能</a>
+    </div>
+
+    <div class="card">
+        <h3>疫苗與驅蟲提醒</h3>
+        <p class="muted">建立疫苗、驅蟲、健檢、回診與用藥提醒。</p>
+        <a class="btn" href="/reminders">查看功能</a>
+    </div>
+
+    <div class="card">
+        <h3>就醫紀錄管理</h3>
+        <p class="muted">保存診所、診斷結果、藥物與獸醫醫囑。</p>
+        <a class="btn" href="/medical-records">查看功能</a>
+    </div>
+
+    <div class="card">
+        <h3>AI 初步健康建議</h3>
+        <p class="muted">輸入症狀後產生風險評分與照護建議。</p>
+        <a class="btn" href="/">開始使用</a>
+    </div>
+
+    <div class="card">
+        <h3>健康趨勢儀表板</h3>
+        <p class="muted">Dashboard 顯示寵物數、健康紀錄、提醒與近期資料。</p>
+        <a class="btn" href="/dashboard">查看 Dashboard</a>
+    </div>
+
+    <div class="card">
+        <h3>健康報告匯出</h3>
+        <p class="muted">整合寵物資料、健康紀錄、就醫紀錄與 AI 建議。</p>
+        <a class="btn" href="/report">查看報告</a>
+    </div>
 </div>
-</body>
-</html>
+
+{% endblock %}
