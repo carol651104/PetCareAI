@@ -17,14 +17,11 @@ import uuid
 
 app = Flask(__name__)
 
-# Flask session 需要 secret key
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "petcareai-dev-secret-key")
 
-# SQLite 資料庫
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///petcare.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# 圖片上傳設定
 UPLOAD_FOLDER = os.path.join("static", "uploads")
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
@@ -34,13 +31,11 @@ os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 db = SQLAlchemy(app)
 
-# Flask-Login 設定
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 login_manager.login_message = "請先登入後再使用此功能。"
 
-# Groq AI Client
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
@@ -53,10 +48,6 @@ def allowed_file(filename):
 
 
 def save_uploaded_photo(file):
-    """
-    儲存上傳圖片，回傳可供 HTML 顯示的路徑，例如：
-    /static/uploads/xxxx.jpg
-    """
     if not file or file.filename == "":
         return None
 
@@ -71,6 +62,13 @@ def save_uploaded_photo(file):
     file.save(save_path)
 
     return f"/static/uploads/{new_filename}"
+
+
+def parse_date(date_string):
+    if not date_string:
+        return datetime.utcnow().date()
+
+    return datetime.strptime(date_string, "%Y-%m-%d").date()
 
 
 # =========================
@@ -106,6 +104,29 @@ class Pet(db.Model):
     age = db.Column(db.String(50))
     weight = db.Column(db.Float)
     photo_url = db.Column(db.String(255))
+    note = db.Column(db.Text)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    health_records = db.relationship(
+        "HealthRecord",
+        backref="pet",
+        lazy=True,
+        cascade="all, delete-orphan"
+    )
+
+
+class HealthRecord(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+
+    pet_id = db.Column(db.Integer, db.ForeignKey("pet.id"), nullable=False)
+
+    record_date = db.Column(db.Date, nullable=False, default=datetime.utcnow)
+    weight = db.Column(db.Float)
+    appetite = db.Column(db.String(100))
+    activity = db.Column(db.String(100))
+    symptoms = db.Column(db.Text)
+    medication = db.Column(db.Text)
     note = db.Column(db.Text)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -261,10 +282,15 @@ def logout():
 def dashboard():
     pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
 
+    total_health_records = 0
+    for pet in pets:
+        total_health_records += len(pet.health_records)
+
     return render_template(
         "dashboard.html",
         pets=pets,
-        pet_count=len(pets)
+        pet_count=len(pets),
+        total_health_records=total_health_records
     )
 
 
@@ -323,7 +349,16 @@ def add_pet():
 @login_required
 def pet_detail(pet_id):
     pet = Pet.query.filter_by(id=pet_id, user_id=current_user.id).first_or_404()
-    return render_template("pet_detail.html", pet=pet)
+
+    health_records = HealthRecord.query.filter_by(pet_id=pet.id).order_by(
+        HealthRecord.record_date.desc()
+    ).all()
+
+    return render_template(
+        "pet_detail.html",
+        pet=pet,
+        health_records=health_records
+    )
 
 
 @app.route("/pets/<int:pet_id>/edit", methods=["GET", "POST"])
@@ -367,6 +402,99 @@ def delete_pet(pet_id):
 
     flash("寵物資料已刪除。")
     return redirect(url_for("pets"))
+
+
+# =========================
+# 健康紀錄 CRUD
+# =========================
+
+@app.route("/health-records")
+@login_required
+def health_records():
+    user_pets = Pet.query.filter_by(user_id=current_user.id).all()
+    pet_ids = [pet.id for pet in user_pets]
+
+    if not pet_ids:
+        records = []
+    else:
+        records = HealthRecord.query.filter(
+            HealthRecord.pet_id.in_(pet_ids)
+        ).order_by(HealthRecord.record_date.desc()).all()
+
+    return render_template("health_records.html", records=records)
+
+
+@app.route("/pets/<int:pet_id>/health/add", methods=["GET", "POST"])
+@login_required
+def add_health_record(pet_id):
+    pet = Pet.query.filter_by(id=pet_id, user_id=current_user.id).first_or_404()
+
+    if request.method == "POST":
+        record_date = parse_date(request.form.get("record_date"))
+        weight = request.form.get("weight")
+        appetite = request.form.get("appetite")
+        activity = request.form.get("activity")
+        symptoms = request.form.get("symptoms")
+        medication = request.form.get("medication")
+        note = request.form.get("note")
+
+        new_record = HealthRecord(
+            pet_id=pet.id,
+            record_date=record_date,
+            weight=float(weight) if weight else None,
+            appetite=appetite,
+            activity=activity,
+            symptoms=symptoms,
+            medication=medication,
+            note=note,
+        )
+
+        db.session.add(new_record)
+        db.session.commit()
+
+        flash("健康紀錄新增成功。")
+        return redirect(url_for("pet_detail", pet_id=pet.id))
+
+    return render_template("add_health_record.html", pet=pet)
+
+
+@app.route("/health/<int:record_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit_health_record(record_id):
+    record = HealthRecord.query.get_or_404(record_id)
+    pet = Pet.query.filter_by(id=record.pet_id, user_id=current_user.id).first_or_404()
+
+    if request.method == "POST":
+        record.record_date = parse_date(request.form.get("record_date"))
+
+        weight = request.form.get("weight")
+        record.weight = float(weight) if weight else None
+
+        record.appetite = request.form.get("appetite")
+        record.activity = request.form.get("activity")
+        record.symptoms = request.form.get("symptoms")
+        record.medication = request.form.get("medication")
+        record.note = request.form.get("note")
+
+        db.session.commit()
+
+        flash("健康紀錄已更新。")
+        return redirect(url_for("pet_detail", pet_id=pet.id))
+
+    return render_template("edit_health_record.html", pet=pet, record=record)
+
+
+@app.route("/health/<int:record_id>/delete", methods=["POST"])
+@login_required
+def delete_health_record(record_id):
+    record = HealthRecord.query.get_or_404(record_id)
+    pet = Pet.query.filter_by(id=record.pet_id, user_id=current_user.id).first_or_404()
+
+    db.session.delete(record)
+    db.session.commit()
+
+    flash("健康紀錄已刪除。")
+    return redirect(url_for("pet_detail", pet_id=pet.id))
 
 
 # =========================
@@ -461,10 +589,6 @@ def ai():
         risk_advice=risk_advice,
     )
 
-
-# =========================
-# 初始化資料庫
-# =========================
 
 with app.app_context():
     db.create_all()
