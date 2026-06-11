@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ pet.name }} - PetCareAI</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: "Microsoft JhengHei", sans-serif;
+            background: #faf7f4;
+            color: #222;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            padding: 50px 24px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+        }
+
+        h1 {
+            color: #b87333;
+            margin-bottom: 8px;
+        }
+
+        h2 {
+            color: #b87333;
+            margin-top: 0;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 18px;
+            background: #8eb4f7;
+            color: white;
+            border-radius: 999px;
+            text-decoration: none;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            margin-right: 8px;
+            font-size: 14px;
+        }
+
+        .btn-brown {
+            background: #b87333;
+        }
+
+        .btn-danger {
+            background: #e06b6b;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 22px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+            margin-bottom: 24px;
+        }
+
+        .pet-layout {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 28px;
+        }
+
+        .pet-img {
+            width: 260px;
+            height: 220px;
+            object-fit: cover;
+            border-radius: 20px;
+            background: #f6f8ff;
+        }
+
+        .placeholder {
+            width: 260px;
+            height: 220px;
+            background: #f6f8ff;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 62px;
+        }
+
+        .meta {
+            line-height: 2;
+            color: #333;
+        }
+
+        .action-row {
+            margin-top: 22px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .flash {
+            background: #fff6e8;
+            color: #8a4f1d;
+            padding: 12px 16px;
+            border-radius: 14px;
+            margin-bottom: 22px;
+        }
+
+        .coming {
+            background: #f6f8ff;
+            padding: 18px;
+            border-radius: 16px;
+            line-height: 1.8;
+        }
+
+        @media (max-width: 760px) {
+            .topbar {
+                display: block;
+            }
+
+            .pet-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .pet-img, .placeholder {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="topbar">
+        <div>
+            <h1>{{ pet.name }}</h1>
+            <div>寵物詳細資料</div>
+        </div>
+
+        <div>
+            <a class="btn" href="/pets">返回列表</a>
+            <a class="btn btn-brown" href="/pets/{{ pet.id }}/edit">修改資料</a>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="flash">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card">
+        <div class="pet-layout">
+            <div>
+                {% if pet.photo_url %}
+                    <img class="pet-img" src="{{ pet.photo_url }}" alt="{{ pet.name }}">
+                {% else %}
+                    <div class="placeholder">🐾</div>
+                {% endif %}
+            </div>
+
+            <div>
+                <h2>基本資料</h2>
+
+                <div class="meta">
+                    寵物名稱：{{ pet.name }}<br>
+                    物種：{{ pet.species }}<br>
+                    品種：{{ pet.breed or "未填寫" }}<br>
+                    性別：{{ pet.gender or "未填寫" }}<br>
+                    年齡：{{ pet.age or "未填寫" }}<br>
+                    體重：{% if pet.weight %}{{ pet.weight }} kg{% else %}未填寫{% endif %}<br>
+                    備註：{{ pet.note or "無" }}
+                </div>
+
+                <div class="action-row">
+                    <a class="btn" href="/">AI 症狀分析</a>
+                    <a class="btn" href="#">新增健康紀錄</a>
+                    <a class="btn" href="#">新增就醫紀錄</a>
+                    <a class="btn" href="#">新增提醒</a>
+
+                    <form method="POST" action="/pets/{{ pet.id }}/delete" onsubmit="return confirm('確定要刪除這隻寵物嗎？');">
+                        <button class="btn btn-danger" type="submit">刪除寵物</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>下一階段功能</h2>
+        <div class="coming">
+            這隻寵物的健康紀錄、就醫紀錄與提醒事項會在下一階段加入。<br>
+            目前已完成寵物資料的新增、查看、修改與刪除。
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
