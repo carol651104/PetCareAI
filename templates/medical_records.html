@@ -1,1 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>就醫紀錄管理</title>
+    <style>
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            background: #faf7f4;
+            padding: 50px;
+            color: #222;
+        }
 
+        .box {
+            max-width: 850px;
+            margin: auto;
+            background: white;
+            padding: 42px;
+            border-radius: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,.06);
+        }
+
+        h1 {
+            color: #b87333;
+        }
+
+        p {
+            line-height: 1.8;
+            font-size: 17px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 14px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            min-height: 110px;
+        }
+
+        .card {
+            background: #f6f8ff;
+            padding: 22px;
+            border-radius: 18px;
+            margin-top: 22px;
+            line-height: 1.8;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 22px;
+            background: #8eb4f7;
+            color: white;
+            border-radius: 999px;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h1>就醫紀錄管理</h1>
+
+    <p>
+        此功能可保存寵物的看診日期、動物醫院、診斷結果、藥物與獸醫囑咐，方便回診或更換診所時查詢過去病史。
+    </p>
+
+    <input type="date">
+    <input type="text" placeholder="動物醫院名稱">
+    <input type="text" placeholder="診斷結果">
+    <textarea placeholder="藥物與醫囑"></textarea>
+
+    <div class="card">
+        <strong>展示紀錄：</strong><br>
+        日期：2026/06/11<br>
+        診所：安心動物醫院<br>
+        診斷：腸胃不適<br>
+        醫囑：觀察食慾並按時服藥
+    </div>
+
+    <a href="/features">返回功能列表</a>
+</div>
+</body>
+</html>
