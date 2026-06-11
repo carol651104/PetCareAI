@@ -9,9 +9,11 @@ from flask_login import (
     current_user,
 )
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from groq import Groq
 from datetime import datetime
 import os
+import uuid
 
 app = Flask(__name__)
 
@@ -21,6 +23,14 @@ app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "petcareai-dev-secret-key")
 # SQLite 資料庫
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///petcare.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+# 圖片上傳設定
+UPLOAD_FOLDER = os.path.join("static", "uploads")
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
+
+os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 db = SQLAlchemy(app)
 
@@ -32,6 +42,35 @@ login_manager.login_message = "請先登入後再使用此功能。"
 
 # Groq AI Client
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+
+# =========================
+# 工具函式
+# =========================
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def save_uploaded_photo(file):
+    """
+    儲存上傳圖片，回傳可供 HTML 顯示的路徑，例如：
+    /static/uploads/xxxx.jpg
+    """
+    if not file or file.filename == "":
+        return None
+
+    if not allowed_file(file.filename):
+        return None
+
+    filename = secure_filename(file.filename)
+    ext = filename.rsplit(".", 1)[1].lower()
+    new_filename = f"{uuid.uuid4().hex}.{ext}"
+
+    save_path = os.path.join(app.config["UPLOAD_FOLDER"], new_filename)
+    file.save(save_path)
+
+    return f"/static/uploads/{new_filename}"
 
 
 # =========================
@@ -250,12 +289,14 @@ def add_pet():
         gender = request.form.get("gender")
         age = request.form.get("age")
         weight = request.form.get("weight")
-        photo_url = request.form.get("photo_url")
         note = request.form.get("note")
 
         if not name or not species:
             flash("請至少填寫寵物名稱與物種。")
             return redirect(url_for("add_pet"))
+
+        photo_file = request.files.get("photo_file")
+        photo_url = save_uploaded_photo(photo_file)
 
         new_pet = Pet(
             user_id=current_user.id,
@@ -300,8 +341,13 @@ def edit_pet(pet_id):
         weight = request.form.get("weight")
         pet.weight = float(weight) if weight else None
 
-        pet.photo_url = request.form.get("photo_url")
         pet.note = request.form.get("note")
+
+        photo_file = request.files.get("photo_file")
+        new_photo_url = save_uploaded_photo(photo_file)
+
+        if new_photo_url:
+            pet.photo_url = new_photo_url
 
         db.session.commit()
 
