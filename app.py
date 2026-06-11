@@ -47,6 +47,30 @@ class User(UserMixin, db.Model):
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    pets = db.relationship(
+        "Pet",
+        backref="owner",
+        lazy=True,
+        cascade="all, delete-orphan"
+    )
+
+
+class Pet(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+
+    name = db.Column(db.String(100), nullable=False)
+    species = db.Column(db.String(50), nullable=False)
+    breed = db.Column(db.String(100))
+    gender = db.Column(db.String(20))
+    age = db.Column(db.String(50))
+    weight = db.Column(db.Float)
+    photo_url = db.Column(db.String(255))
+    note = db.Column(db.Text)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -196,7 +220,107 @@ def logout():
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    return render_template("dashboard.html")
+    pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
+
+    return render_template(
+        "dashboard.html",
+        pets=pets,
+        pet_count=len(pets)
+    )
+
+
+# =========================
+# 寵物資料 CRUD
+# =========================
+
+@app.route("/pets")
+@login_required
+def pets():
+    all_pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
+    return render_template("pets.html", pets=all_pets)
+
+
+@app.route("/pets/add", methods=["GET", "POST"])
+@login_required
+def add_pet():
+    if request.method == "POST":
+        name = request.form.get("name")
+        species = request.form.get("species")
+        breed = request.form.get("breed")
+        gender = request.form.get("gender")
+        age = request.form.get("age")
+        weight = request.form.get("weight")
+        photo_url = request.form.get("photo_url")
+        note = request.form.get("note")
+
+        if not name or not species:
+            flash("請至少填寫寵物名稱與物種。")
+            return redirect(url_for("add_pet"))
+
+        new_pet = Pet(
+            user_id=current_user.id,
+            name=name,
+            species=species,
+            breed=breed,
+            gender=gender,
+            age=age,
+            weight=float(weight) if weight else None,
+            photo_url=photo_url,
+            note=note,
+        )
+
+        db.session.add(new_pet)
+        db.session.commit()
+
+        flash("寵物資料新增成功。")
+        return redirect(url_for("pets"))
+
+    return render_template("add_pet.html")
+
+
+@app.route("/pets/<int:pet_id>")
+@login_required
+def pet_detail(pet_id):
+    pet = Pet.query.filter_by(id=pet_id, user_id=current_user.id).first_or_404()
+    return render_template("pet_detail.html", pet=pet)
+
+
+@app.route("/pets/<int:pet_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit_pet(pet_id):
+    pet = Pet.query.filter_by(id=pet_id, user_id=current_user.id).first_or_404()
+
+    if request.method == "POST":
+        pet.name = request.form.get("name")
+        pet.species = request.form.get("species")
+        pet.breed = request.form.get("breed")
+        pet.gender = request.form.get("gender")
+        pet.age = request.form.get("age")
+
+        weight = request.form.get("weight")
+        pet.weight = float(weight) if weight else None
+
+        pet.photo_url = request.form.get("photo_url")
+        pet.note = request.form.get("note")
+
+        db.session.commit()
+
+        flash("寵物資料已更新。")
+        return redirect(url_for("pet_detail", pet_id=pet.id))
+
+    return render_template("edit_pet.html", pet=pet)
+
+
+@app.route("/pets/<int:pet_id>/delete", methods=["POST"])
+@login_required
+def delete_pet(pet_id):
+    pet = Pet.query.filter_by(id=pet_id, user_id=current_user.id).first_or_404()
+
+    db.session.delete(pet)
+    db.session.commit()
+
+    flash("寵物資料已刪除。")
+    return redirect(url_for("pets"))
 
 
 # =========================
