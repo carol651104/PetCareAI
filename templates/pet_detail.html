@@ -57,6 +57,10 @@
             background: #e06b6b;
         }
 
+        .btn-green {
+            background: #70b77e;
+        }
+
         .card {
             background: white;
             padding: 30px;
@@ -110,7 +114,28 @@
             margin-bottom: 22px;
         }
 
-        .coming {
+        .record {
+            background: #f6f8ff;
+            border-radius: 16px;
+            padding: 18px;
+            margin-top: 16px;
+            line-height: 1.9;
+        }
+
+        .record-title {
+            font-weight: bold;
+            color: #b87333;
+            margin-bottom: 8px;
+        }
+
+        .record-actions {
+            margin-top: 12px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .empty {
             background: #f6f8ff;
             padding: 18px;
             border-radius: 16px;
@@ -182,9 +207,7 @@
 
                 <div class="action-row">
                     <a class="btn" href="/">AI 症狀分析</a>
-                    <a class="btn" href="#">新增健康紀錄</a>
-                    <a class="btn" href="#">新增就醫紀錄</a>
-                    <a class="btn" href="#">新增提醒</a>
+                    <a class="btn btn-green" href="/pets/{{ pet.id }}/health/add">新增健康紀錄</a>
 
                     <form method="POST" action="/pets/{{ pet.id }}/delete" onsubmit="return confirm('確定要刪除這隻寵物嗎？');">
                         <button class="btn btn-danger" type="submit">刪除寵物</button>
@@ -195,11 +218,35 @@
     </div>
 
     <div class="card">
-        <h2>下一階段功能</h2>
-        <div class="coming">
-            這隻寵物的健康紀錄、就醫紀錄與提醒事項會在下一階段加入。<br>
-            目前已完成寵物資料的新增、查看、修改與刪除。
-        </div>
+        <h2>健康紀錄</h2>
+
+        {% if health_records %}
+            {% for record in health_records %}
+                <div class="record">
+                    <div class="record-title">紀錄日期：{{ record.record_date }}</div>
+
+                    體重：{% if record.weight %}{{ record.weight }} kg{% else %}未填寫{% endif %}<br>
+                    食慾：{{ record.appetite or "未填寫" }}<br>
+                    活動量：{{ record.activity or "未填寫" }}<br>
+                    症狀：{{ record.symptoms or "無" }}<br>
+                    用藥情況：{{ record.medication or "無" }}<br>
+                    備註：{{ record.note or "無" }}
+
+                    <div class="record-actions">
+                        <a class="btn btn-brown" href="/health/{{ record.id }}/edit">修改紀錄</a>
+
+                        <form method="POST" action="/health/{{ record.id }}/delete" onsubmit="return confirm('確定要刪除這筆健康紀錄嗎？');">
+                            <button class="btn btn-danger" type="submit">刪除紀錄</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty">
+                目前尚未新增健康紀錄。<br>
+                可以點選「新增健康紀錄」開始追蹤寵物狀況。
+            </div>
+        {% endif %}
     </div>
 
 </div>
