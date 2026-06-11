@@ -1,1 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>疫苗與驅蟲提醒</title>
+    <style>
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            background: #faf7f4;
+            padding: 50px;
+            color: #222;
+        }
 
+        .box {
+            max-width: 850px;
+            margin: auto;
+            background: white;
+            padding: 42px;
+            border-radius: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,.06);
+        }
+
+        h1 {
+            color: #b87333;
+        }
+
+        p {
+            line-height: 1.8;
+            font-size: 17px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 14px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .card {
+            background: #fff6e8;
+            padding: 22px;
+            border-radius: 18px;
+            margin-top: 22px;
+            line-height: 1.8;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 22px;
+            background: #8eb4f7;
+            color: white;
+            border-radius: 999px;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h1>疫苗與驅蟲提醒</h1>
+
+    <p>
+        飼主可以設定疫苗、驅蟲、健檢與回診日期，系統將協助提醒重要照護事項，降低遺忘機率。
+    </p>
+
+    <select>
+        <option>疫苗提醒</option>
+        <option>驅蟲提醒</option>
+        <option>健檢提醒</option>
+        <option>回診提醒</option>
+    </select>
+
+    <input type="date">
+
+    <div class="card">
+        <strong>即將提醒：</strong><br>
+        寵物：布丁<br>
+        提醒項目：年度疫苗<br>
+        日期：2026/07/01<br>
+        狀態：待完成
+    </div>
+
+    <a href="/features">返回功能列表</a>
+</div>
+</body>
+</html>
