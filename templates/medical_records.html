@@ -1,89 +1,32 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-    <meta charset="UTF-8">
-    <title>就醫紀錄管理</title>
-    <style>
-        body {
-            font-family: "Microsoft JhengHei", sans-serif;
-            background: #faf7f4;
-            padding: 50px;
-            color: #222;
-        }
+{% extends "base.html" %}
 
-        .box {
-            max-width: 850px;
-            margin: auto;
-            background: white;
-            padding: 42px;
-            border-radius: 24px;
-            box-shadow: 0 8px 24px rgba(0,0,0,.06);
-        }
+{% block title %}就醫紀錄管理{% endblock %}
 
-        h1 {
-            color: #b87333;
-        }
+{% block content %}
 
-        p {
-            line-height: 1.8;
-            font-size: 17px;
-        }
+<h1>就醫紀錄管理</h1>
+<p class="muted">查看目前登入帳號下所有寵物的就醫紀錄。</p>
 
-        input, textarea {
-            width: 100%;
-            padding: 14px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 12px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
+{% if records %}
+    {% for record in records %}
+        <div class="card">
+            <h3>{{ record.pet.name }}｜{{ record.visit_date }}</h3>
+            <p>
+                診所：{{ record.clinic_name or "未填寫" }}<br>
+                診斷：{{ record.diagnosis or "未填寫" }}<br>
+                藥物：{{ record.medicine or "無" }}<br>
+                醫囑：{{ record.doctor_advice or "無" }}<br>
+                備註：{{ record.note or "無" }}
+            </p>
 
-        textarea {
-            min-height: 110px;
-        }
-
-        .card {
-            background: #f6f8ff;
-            padding: 22px;
-            border-radius: 18px;
-            margin-top: 22px;
-            line-height: 1.8;
-        }
-
-        a {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 12px 22px;
-            background: #8eb4f7;
-            color: white;
-            border-radius: 999px;
-            text-decoration: none;
-        }
-    </style>
-</head>
-<body>
-<div class="box">
-    <h1>就醫紀錄管理</h1>
-
-    <p>
-        此功能可保存寵物的看診日期、動物醫院、診斷結果、藥物與獸醫囑咐，方便回診或更換診所時查詢過去病史。
-    </p>
-
-    <input type="date">
-    <input type="text" placeholder="動物醫院名稱">
-    <input type="text" placeholder="診斷結果">
-    <textarea placeholder="藥物與醫囑"></textarea>
-
+            <a class="btn" href="/pets/{{ record.pet.id }}">查看寵物</a>
+            <a class="btn btn-brown" href="/medical/{{ record.id }}/edit">修改</a>
+        </div>
+    {% endfor %}
+{% else %}
     <div class="card">
-        <strong>展示紀錄：</strong><br>
-        日期：2026/06/11<br>
-        診所：安心動物醫院<br>
-        診斷：腸胃不適<br>
-        醫囑：觀察食慾並按時服藥
+        <p class="muted">目前尚未建立任何就醫紀錄。</p>
     </div>
+{% endif %}
 
-    <a href="/features">返回功能列表</a>
-</div>
-</body>
-</html>
+{% endblock %}
