@@ -1,255 +1,142 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ pet.name }} - PetCareAI</title>
+{% extends "base.html" %}
 
-    <style>
-        body {
-            margin: 0;
-            font-family: "Microsoft JhengHei", sans-serif;
-            background: #faf7f4;
-            color: #222;
-        }
+{% block title %}{{ pet.name }}{% endblock %}
 
-        .container {
-            max-width: 1000px;
-            margin: auto;
-            padding: 50px 24px;
-        }
+{% block content %}
 
-        .topbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 28px;
-        }
+<h1>{{ pet.name }}</h1>
+<p class="muted">寵物詳細資料與健康管理</p>
 
-        h1 {
-            color: #b87333;
-            margin-bottom: 8px;
-        }
-
-        h2 {
-            color: #b87333;
-            margin-top: 0;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 10px 18px;
-            background: #8eb4f7;
-            color: white;
-            border-radius: 999px;
-            text-decoration: none;
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-            margin-right: 8px;
-            font-size: 14px;
-        }
-
-        .btn-brown {
-            background: #b87333;
-        }
-
-        .btn-danger {
-            background: #e06b6b;
-        }
-
-        .btn-green {
-            background: #70b77e;
-        }
-
-        .card {
-            background: white;
-            padding: 30px;
-            border-radius: 22px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
-            margin-bottom: 24px;
-        }
-
-        .pet-layout {
-            display: grid;
-            grid-template-columns: 260px 1fr;
-            gap: 28px;
-        }
-
-        .pet-img {
-            width: 260px;
-            height: 220px;
-            object-fit: cover;
-            border-radius: 20px;
-            background: #f6f8ff;
-        }
-
-        .placeholder {
-            width: 260px;
-            height: 220px;
-            background: #f6f8ff;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 62px;
-        }
-
-        .meta {
-            line-height: 2;
-            color: #333;
-        }
-
-        .action-row {
-            margin-top: 22px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .flash {
-            background: #fff6e8;
-            color: #8a4f1d;
-            padding: 12px 16px;
-            border-radius: 14px;
-            margin-bottom: 22px;
-        }
-
-        .record {
-            background: #f6f8ff;
-            border-radius: 16px;
-            padding: 18px;
-            margin-top: 16px;
-            line-height: 1.9;
-        }
-
-        .record-title {
-            font-weight: bold;
-            color: #b87333;
-            margin-bottom: 8px;
-        }
-
-        .record-actions {
-            margin-top: 12px;
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .empty {
-            background: #f6f8ff;
-            padding: 18px;
-            border-radius: 16px;
-            line-height: 1.8;
-        }
-
-        @media (max-width: 760px) {
-            .topbar {
-                display: block;
-            }
-
-            .pet-layout {
-                grid-template-columns: 1fr;
-            }
-
-            .pet-img, .placeholder {
-                width: 100%;
-            }
-        }
-    </style>
-</head>
-
-<body>
-
-<div class="container">
-
-    <div class="topbar">
+<div class="card">
+    <div style="display:grid; grid-template-columns:260px 1fr; gap:28px;">
         <div>
-            <h1>{{ pet.name }}</h1>
-            <div>寵物詳細資料</div>
+            {% if pet.photo_url %}
+                <img src="{{ pet.photo_url }}" style="width:260px; height:220px; object-fit:cover; border-radius:20px;">
+            {% else %}
+                <div style="width:260px; height:220px; background:#f6f8ff; border-radius:20px; display:flex; align-items:center; justify-content:center; font-size:60px;">🐾</div>
+            {% endif %}
         </div>
 
         <div>
-            <a class="btn" href="/pets">返回列表</a>
-            <a class="btn btn-brown" href="/pets/{{ pet.id }}/edit">修改資料</a>
+            <h2>基本資料</h2>
+            <p>
+                名稱：{{ pet.name }}<br>
+                物種：{{ pet.species }}<br>
+                品種：{{ pet.breed or "未填寫" }}<br>
+                性別：{{ pet.gender or "未填寫" }}<br>
+                年齡：{{ pet.age or "未填寫" }}<br>
+                體重：{{ pet.weight or "未填寫" }} kg<br>
+                備註：{{ pet.note or "無" }}
+            </p>
+
+            <a class="btn" href="/pets/{{ pet.id }}/edit">修改資料</a>
+            <a class="btn btn-green" href="/pets/{{ pet.id }}/health/add">新增健康紀錄</a>
+            <a class="btn" href="/pets/{{ pet.id }}/medical/add">新增就醫紀錄</a>
+            <a class="btn btn-brown" href="/pets/{{ pet.id }}/reminder/add">新增提醒</a>
+            <a class="btn" href="/">AI 分析</a>
         </div>
     </div>
-
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            {% for message in messages %}
-                <div class="flash">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-
-    <div class="card">
-        <div class="pet-layout">
-            <div>
-                {% if pet.photo_url %}
-                    <img class="pet-img" src="{{ pet.photo_url }}" alt="{{ pet.name }}">
-                {% else %}
-                    <div class="placeholder">🐾</div>
-                {% endif %}
-            </div>
-
-            <div>
-                <h2>基本資料</h2>
-
-                <div class="meta">
-                    寵物名稱：{{ pet.name }}<br>
-                    物種：{{ pet.species }}<br>
-                    品種：{{ pet.breed or "未填寫" }}<br>
-                    性別：{{ pet.gender or "未填寫" }}<br>
-                    年齡：{{ pet.age or "未填寫" }}<br>
-                    體重：{% if pet.weight %}{{ pet.weight }} kg{% else %}未填寫{% endif %}<br>
-                    備註：{{ pet.note or "無" }}
-                </div>
-
-                <div class="action-row">
-                    <a class="btn" href="/">AI 症狀分析</a>
-                    <a class="btn btn-green" href="/pets/{{ pet.id }}/health/add">新增健康紀錄</a>
-
-                    <form method="POST" action="/pets/{{ pet.id }}/delete" onsubmit="return confirm('確定要刪除這隻寵物嗎？');">
-                        <button class="btn btn-danger" type="submit">刪除寵物</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card">
-        <h2>健康紀錄</h2>
-
-        {% if health_records %}
-            {% for record in health_records %}
-                <div class="record">
-                    <div class="record-title">紀錄日期：{{ record.record_date }}</div>
-
-                    體重：{% if record.weight %}{{ record.weight }} kg{% else %}未填寫{% endif %}<br>
-                    食慾：{{ record.appetite or "未填寫" }}<br>
-                    活動量：{{ record.activity or "未填寫" }}<br>
-                    症狀：{{ record.symptoms or "無" }}<br>
-                    用藥情況：{{ record.medication or "無" }}<br>
-                    備註：{{ record.note or "無" }}
-
-                    <div class="record-actions">
-                        <a class="btn btn-brown" href="/health/{{ record.id }}/edit">修改紀錄</a>
-
-                        <form method="POST" action="/health/{{ record.id }}/delete" onsubmit="return confirm('確定要刪除這筆健康紀錄嗎？');">
-                            <button class="btn btn-danger" type="submit">刪除紀錄</button>
-                        </form>
-                    </div>
-                </div>
-            {% endfor %}
-        {% else %}
-            <div class="empty">
-                目前尚未新增健康紀錄。<br>
-                可以點選「新增健康紀錄」開始追蹤寵物狀況。
-            </div>
-        {% endif %}
-    </div>
-
 </div>
 
-</body>
-</html>
+<div class="card">
+    <h2>健康紀錄</h2>
+
+    {% if health_records %}
+        {% for record in health_records %}
+            <div class="record">
+                日期：{{ record.record_date }}<br>
+                體重：{{ record.weight or "未填寫" }} kg<br>
+                食慾：{{ record.appetite or "未填寫" }}<br>
+                活動量：{{ record.activity or "未填寫" }}<br>
+                症狀：{{ record.symptoms or "無" }}<br>
+                用藥：{{ record.medication or "無" }}<br>
+                備註：{{ record.note or "無" }}<br>
+
+                <a class="btn btn-brown" href="/health/{{ record.id }}/edit">修改</a>
+                <form method="POST" action="/health/{{ record.id }}/delete" onsubmit="return confirm('確定刪除健康紀錄？');">
+                    <button class="btn btn-danger" type="submit">刪除</button>
+                </form>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="muted">目前沒有健康紀錄。</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>就醫紀錄</h2>
+
+    {% if medical_records %}
+        {% for record in medical_records %}
+            <div class="record">
+                日期：{{ record.visit_date }}<br>
+                診所：{{ record.clinic_name or "未填寫" }}<br>
+                診斷：{{ record.diagnosis or "未填寫" }}<br>
+                藥物：{{ record.medicine or "無" }}<br>
+                醫囑：{{ record.doctor_advice or "無" }}<br>
+                備註：{{ record.note or "無" }}<br>
+
+                <a class="btn btn-brown" href="/medical/{{ record.id }}/edit">修改</a>
+                <form method="POST" action="/medical/{{ record.id }}/delete" onsubmit="return confirm('確定刪除就醫紀錄？');">
+                    <button class="btn btn-danger" type="submit">刪除</button>
+                </form>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="muted">目前沒有就醫紀錄。</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>提醒事項</h2>
+
+    {% if reminders %}
+        {% for reminder in reminders %}
+            <div class="record">
+                <span class="badge {% if reminder.is_done %}done{% else %}pending{% endif %}">
+                    {% if reminder.is_done %}已完成{% else %}待完成{% endif %}
+                </span>
+                <br><br>
+                類型：{{ reminder.reminder_type }}<br>
+                日期：{{ reminder.reminder_date }}<br>
+                備註：{{ reminder.note or "無" }}<br>
+
+                <form method="POST" action="/reminder/{{ reminder.id }}/done">
+                    <button class="btn btn-green" type="submit">切換完成狀態</button>
+                </form>
+
+                <a class="btn btn-brown" href="/reminder/{{ reminder.id }}/edit">修改</a>
+
+                <form method="POST" action="/reminder/{{ reminder.id }}/delete" onsubmit="return confirm('確定刪除提醒？');">
+                    <button class="btn btn-danger" type="submit">刪除</button>
+                </form>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="muted">目前沒有提醒事項。</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>AI 諮詢紀錄</h2>
+
+    {% if ai_records %}
+        {% for record in ai_records %}
+            <div class="record">
+                時間：{{ record.created_at }}<br>
+                風險：{{ record.risk_score }} 分｜{{ record.risk_level }}<br>
+                症狀：{{ record.symptom }}<br>
+                <details>
+                    <summary>查看 AI 建議</summary>
+                    <div style="white-space: pre-wrap;">{{ record.ai_answer }}</div>
+                </details>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="muted">目前沒有 AI 諮詢紀錄。</p>
+    {% endif %}
+</div>
+
+<a class="btn" href="/pets">返回寵物列表</a>
+
+{% endblock %}
