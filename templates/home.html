@@ -8,25 +8,109 @@
 
     <style>
         body {
-            background: #fff7f7;
+            background: #faf7f4;
             font-family: "Microsoft JhengHei", sans-serif;
+            color: #222;
+        }
+
+        .main-container {
+            max-width: 1100px;
+            margin: auto;
+            padding: 50px 24px;
         }
 
         .hero {
-            background: linear-gradient(135deg, #ffb6c1, #ffe4e1);
-            border-radius: 24px;
-            padding: 50px;
-            margin-top: 40px;
+            background: transparent;
+            padding: 30px 0 34px 0;
+            margin-top: 10px;
+        }
+
+        .hero h1 {
+            color: #b87333;
+            font-size: 46px;
+            font-weight: bold;
+            margin-bottom: 16px;
+        }
+
+        .hero .lead {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .hero p {
+            color: #333;
+            line-height: 1.8;
+        }
+
+        .feature-btn {
+            display: inline-block;
+            margin-top: 18px;
+            padding: 11px 24px;
+            background: #b87333;
+            color: white;
+            border-radius: 999px;
+            text-decoration: none;
+            font-weight: bold;
+            box-shadow: 0 6px 16px rgba(184, 115, 51, 0.22);
+            transition: 0.2s;
+        }
+
+        .feature-btn:hover {
+            background: #9f622c;
+            transform: translateY(-2px);
+            color: white;
         }
 
         .card {
-            border-radius: 20px;
+            background: white;
+            border-radius: 22px;
             border: none;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+        }
+
+        .section-title {
+            color: #b87333;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-control,
+        .form-select {
+            border-radius: 12px;
+            border: 1px solid #ddd;
+            padding: 12px 14px;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #8eb4f7;
+            box-shadow: 0 0 0 0.2rem rgba(142, 180, 247, 0.22);
         }
 
         textarea {
             resize: none;
+        }
+
+        .analyze-btn {
+            background: #8eb4f7;
+            border: none;
+            border-radius: 999px;
+            padding: 12px 20px;
+            font-weight: bold;
+            color: white;
+            transition: 0.2s;
+        }
+
+        .analyze-btn:hover {
+            background: #75a1ef;
+            transform: translateY(-1px);
+            color: white;
         }
 
         .answer-box {
@@ -39,21 +123,45 @@
             padding: 12px 18px;
             border-radius: 20px;
         }
+
+        .info-card {
+            line-height: 1.8;
+        }
+
+        .footer-space {
+            height: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 34px 18px;
+            }
+
+            .hero h1 {
+                font-size: 36px;
+            }
+
+            .hero .lead {
+                font-size: 18px;
+            }
+        }
     </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="main-container">
 
-    <div class="hero text-center">
-        <h1 class="fw-bold">PetCare AI</h1>
+    <div class="hero">
+        <h1>PetCareAI</h1>
         <p class="lead">智慧寵物健康管理 SaaS 平台</p>
-        <p>結合寵物基本資料、症狀描述、風險評分與 AI 照護建議</p>
+        <p>結合寵物基本資料、症狀描述、風險評分與 AI 照護建議，協助飼主更有效率地掌握寵物健康狀況。</p>
+
+        <a href="/features" class="feature-btn">查看 PetCareAI 8 大功能</a>
     </div>
 
-    <div class="card p-4 mt-4">
-        <h4 class="fw-bold mb-3">寵物資料與症狀分析</h4>
+    <div class="card p-4 mt-3">
+        <h4 class="section-title">寵物資料與症狀分析</h4>
 
         <form action="/ai" method="post">
 
@@ -108,30 +216,35 @@
                     required></textarea>
             </div>
 
-            <button class="btn btn-danger mt-2 w-100" type="submit">
+            <button class="btn analyze-btn mt-2 w-100" type="submit">
                 開始分析
             </button>
         </form>
     </div>
 
     {% if pet_info %}
-    <div class="card p-4 mt-4">
-        <h4 class="fw-bold mb-3">本次寵物資料</h4>
+    <div class="card p-4 mt-4 info-card">
+        <h4 class="section-title">本次寵物資料</h4>
 
         <div class="row">
-            <div class="col-md-4">名稱：{{ pet_info.pet_name }}</div>
-            <div class="col-md-4">物種：{{ pet_info.species }}</div>
-            <div class="col-md-4">品種：{{ pet_info.breed }}</div>
-            <div class="col-md-4">性別：{{ pet_info.gender }}</div>
-            <div class="col-md-4">年齡：{{ pet_info.age }} 歲</div>
-            <div class="col-md-4">體重：{{ pet_info.weight }} kg</div>
+            <div class="col-md-4 mb-2">名稱：{{ pet_info.pet_name }}</div>
+            <div class="col-md-4 mb-2">物種：{{ pet_info.species }}</div>
+            <div class="col-md-4 mb-2">品種：{{ pet_info.breed }}</div>
+            <div class="col-md-4 mb-2">性別：{{ pet_info.gender }}</div>
+            <div class="col-md-4 mb-2">年齡：{{ pet_info.age }} 歲</div>
+            <div class="col-md-4 mb-2">體重：{{ pet_info.weight }} kg</div>
+        </div>
+
+        <div class="mt-3">
+            <strong>症狀描述：</strong><br>
+            {{ pet_info.symptom }}
         </div>
     </div>
     {% endif %}
 
     {% if risk_level %}
     <div class="card p-4 mt-4">
-        <h4 class="fw-bold mb-3">健康風險評分</h4>
+        <h4 class="section-title">健康風險評分</h4>
 
         <span class="badge bg-{{ risk_color }} badge-risk">
             {{ risk_score }} 分｜{{ risk_level }}
@@ -143,13 +256,15 @@
 
     {% if answer %}
     <div class="card p-4 mt-4 mb-5">
-        <h4 class="fw-bold mb-3">AI 初步照護建議</h4>
+        <h4 class="section-title">AI 初步照護建議</h4>
 
         <div class="answer-box">
             {{ answer }}
         </div>
     </div>
     {% endif %}
+
+    <div class="footer-space"></div>
 
 </div>
 
