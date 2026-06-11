@@ -2,102 +2,117 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>健康紀錄管理</title>
+    <title>健康紀錄管理 - PetCareAI</title>
+
     <style>
         body {
+            margin: 0;
             font-family: "Microsoft JhengHei", sans-serif;
             background: #faf7f4;
-            padding: 50px;
             color: #222;
         }
 
-        .box {
-            max-width: 850px;
+        .container {
+            max-width: 1100px;
             margin: auto;
-            background: white;
-            padding: 42px;
-            border-radius: 24px;
-            box-shadow: 0 8px 24px rgba(0,0,0,.06);
+            padding: 50px 24px;
         }
 
         h1 {
             color: #b87333;
+            margin-bottom: 8px;
         }
 
-        p {
+        .subtitle {
+            color: #555;
             line-height: 1.8;
-            font-size: 17px;
+            margin-bottom: 28px;
         }
 
-        input, textarea, select {
-            width: 100%;
-            padding: 14px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 12px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-
-        textarea {
-            min-height: 100px;
-        }
-
-        .card {
-            background: #f6f8ff;
-            padding: 22px;
-            border-radius: 18px;
-            margin-top: 22px;
-            line-height: 1.8;
-        }
-
-        a {
+        .btn {
             display: inline-block;
-            margin-top: 20px;
-            padding: 12px 22px;
+            padding: 10px 18px;
             background: #8eb4f7;
             color: white;
             border-radius: 999px;
             text-decoration: none;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            margin-right: 8px;
+            font-size: 14px;
+        }
+
+        .btn-brown {
+            background: #b87333;
+        }
+
+        .card {
+            background: white;
+            padding: 26px;
+            border-radius: 22px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+            margin-bottom: 18px;
+            line-height: 1.9;
+        }
+
+        .card h3 {
+            color: #b87333;
+            margin-top: 0;
+        }
+
+        .empty {
+            background: white;
+            padding: 32px;
+            border-radius: 22px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+            line-height: 1.8;
+        }
+
+        .actions {
+            margin-top: 24px;
         }
     </style>
 </head>
+
 <body>
-<div class="box">
+
+<div class="container">
     <h1>健康紀錄管理</h1>
-
-    <p>
-        此功能可紀錄寵物的日常健康狀況，例如體重、食慾、活動量、症狀與用藥情況，協助飼主長期追蹤寵物健康變化。
-    </p>
-
-    <input type="date">
-    <input type="text" placeholder="體重，例如：4.5 kg">
-
-    <select>
-        <option>食慾正常</option>
-        <option>食慾下降</option>
-        <option>幾乎不吃</option>
-    </select>
-
-    <select>
-        <option>活動量正常</option>
-        <option>活動量下降</option>
-        <option>精神很好</option>
-    </select>
-
-    <textarea placeholder="症狀紀錄，例如：嘔吐、拉肚子、精神不佳"></textarea>
-    <textarea placeholder="用藥情況"></textarea>
-
-    <div class="card">
-        <strong>展示紀錄：</strong><br>
-        日期：2026/06/11<br>
-        體重：4.5 kg<br>
-        食慾：正常<br>
-        活動量：正常<br>
-        症狀：無明顯異常
+    <div class="subtitle">
+        查看目前登入帳號下所有寵物的健康紀錄。
     </div>
 
-    <a href="/features">返回功能列表</a>
+    {% if records %}
+        {% for record in records %}
+            <div class="card">
+                <h3>{{ record.pet.name }}｜{{ record.record_date }}</h3>
+
+                體重：{% if record.weight %}{{ record.weight }} kg{% else %}未填寫{% endif %}<br>
+                食慾：{{ record.appetite or "未填寫" }}<br>
+                活動量：{{ record.activity or "未填寫" }}<br>
+                症狀：{{ record.symptoms or "無" }}<br>
+                用藥情況：{{ record.medication or "無" }}<br>
+                備註：{{ record.note or "無" }}<br>
+
+                <div class="actions">
+                    <a class="btn" href="/pets/{{ record.pet.id }}">查看寵物</a>
+                    <a class="btn btn-brown" href="/health/{{ record.id }}/edit">修改紀錄</a>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty">
+            目前尚未建立任何健康紀錄。<br>
+            請先到寵物詳細頁，點選「新增健康紀錄」。
+        </div>
+    {% endif %}
+
+    <div class="actions">
+        <a class="btn" href="/dashboard">返回 Dashboard</a>
+        <a class="btn btn-brown" href="/pets">寵物資料管理</a>
+    </div>
 </div>
+
 </body>
 </html>
