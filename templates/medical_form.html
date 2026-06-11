@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}就醫紀錄{% endblock %}
+
+{% block content %}
+
+<div class="card" style="max-width:760px; margin:0 auto;">
+    <h1>{% if mode == "add" %}新增就醫紀錄{% else %}修改就醫紀錄{% endif %}</h1>
+    <p class="muted">寵物：{{ pet.name }}</p>
+
+    <form method="POST">
+        <label>看診日期</label>
+        <input type="date" name="visit_date" value="{{ record.visit_date if record else '' }}">
+
+        <label>動物醫院 / 診所</label>
+        <input type="text" name="clinic_name" value="{{ record.clinic_name if record else '' }}">
+
+        <label>診斷結果</label>
+        <input type="text" name="diagnosis" value="{{ record.diagnosis if record else '' }}">
+
+        <label>藥物</label>
+        <textarea name="medicine">{{ record.medicine if record else '' }}</textarea>
+
+        <label>獸醫醫囑</label>
+        <textarea name="doctor_advice">{{ record.doctor_advice if record else '' }}</textarea>
+
+        <label>備註</label>
+        <textarea name="note">{{ record.note if record else '' }}</textarea>
+
+        <button class="btn btn-brown" type="submit">儲存</button>
+        <a class="btn" href="/pets/{{ pet.id }}">返回寵物詳細資料</a>
+    </form>
+</div>
+
+{% endblock %}
