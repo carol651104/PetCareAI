@@ -19,12 +19,15 @@ app = Flask(__name__)
 
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "petcareai-dev-secret-key")
 
-app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///petcare.db")
+database_url = os.getenv("DATABASE_URL", "sqlite:///petcare.db")
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 UPLOAD_FOLDER = os.path.join("static", "uploads")
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
@@ -67,8 +70,29 @@ def save_uploaded_photo(file):
 def parse_date(date_string):
     if not date_string:
         return datetime.utcnow().date()
-
     return datetime.strptime(date_string, "%Y-%m-%d").date()
+
+
+def get_user_pet_or_404(pet_id):
+    return Pet.query.filter_by(id=pet_id, user_id=current_user.id).first_or_404()
+
+
+def get_user_health_record_or_404(record_id):
+    record = HealthRecord.query.get_or_404(record_id)
+    pet = get_user_pet_or_404(record.pet_id)
+    return record, pet
+
+
+def get_user_medical_record_or_404(record_id):
+    record = MedicalRecord.query.get_or_404(record_id)
+    pet = get_user_pet_or_404(record.pet_id)
+    return record, pet
+
+
+def get_user_reminder_or_404(reminder_id):
+    reminder = Reminder.query.get_or_404(reminder_id)
+    pet = get_user_pet_or_404(reminder.pet_id)
+    return reminder, pet
 
 
 # =========================
@@ -115,6 +139,20 @@ class Pet(db.Model):
         cascade="all, delete-orphan"
     )
 
+    medical_records = db.relationship(
+        "MedicalRecord",
+        backref="pet",
+        lazy=True,
+        cascade="all, delete-orphan"
+    )
+
+    reminders = db.relationship(
+        "Reminder",
+        backref="pet",
+        lazy=True,
+        cascade="all, delete-orphan"
+    )
+
 
 class HealthRecord(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -128,6 +166,55 @@ class HealthRecord(db.Model):
     symptoms = db.Column(db.Text)
     medication = db.Column(db.Text)
     note = db.Column(db.Text)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class MedicalRecord(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+
+    pet_id = db.Column(db.Integer, db.ForeignKey("pet.id"), nullable=False)
+
+    visit_date = db.Column(db.Date, nullable=False, default=datetime.utcnow)
+    clinic_name = db.Column(db.String(150))
+    diagnosis = db.Column(db.String(200))
+    medicine = db.Column(db.Text)
+    doctor_advice = db.Column(db.Text)
+    note = db.Column(db.Text)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Reminder(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+
+    pet_id = db.Column(db.Integer, db.ForeignKey("pet.id"), nullable=False)
+
+    reminder_type = db.Column(db.String(100), nullable=False)
+    reminder_date = db.Column(db.Date, nullable=False)
+    note = db.Column(db.Text)
+    is_done = db.Column(db.Boolean, default=False)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class AIConsultation(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    pet_id = db.Column(db.Integer, db.ForeignKey("pet.id"), nullable=True)
+
+    pet_name = db.Column(db.String(100))
+    species = db.Column(db.String(50))
+    breed = db.Column(db.String(100))
+    gender = db.Column(db.String(20))
+    age = db.Column(db.String(50))
+    weight = db.Column(db.String(50))
+    symptom = db.Column(db.Text)
+
+    risk_score = db.Column(db.Integer)
+    risk_level = db.Column(db.String(50))
+    ai_answer = db.Column(db.Text)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -194,12 +281,15 @@ def calculate_risk_score(age, weight, symptom):
 
 
 # =========================
-# 首頁與功能頁
+# 首頁 / 功能頁
 # =========================
 
 @app.route("/")
 def home():
-    return render_template("home.html")
+    pets = []
+    if current_user.is_authenticated:
+        pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
+    return render_template("home.html", pets=pets)
 
 
 @app.route("/features")
@@ -208,7 +298,7 @@ def features():
 
 
 # =========================
-# 註冊 / 登入 / 登出
+# 會員登入
 # =========================
 
 @app.route("/register", methods=["GET", "POST"])
@@ -281,21 +371,41 @@ def logout():
 @login_required
 def dashboard():
     pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
+    pet_ids = [pet.id for pet in pets]
 
-    total_health_records = 0
-    for pet in pets:
-        total_health_records += len(pet.health_records)
+    total_health_records = HealthRecord.query.filter(HealthRecord.pet_id.in_(pet_ids)).count() if pet_ids else 0
+    total_medical_records = MedicalRecord.query.filter(MedicalRecord.pet_id.in_(pet_ids)).count() if pet_ids else 0
+    total_reminders = Reminder.query.filter(Reminder.pet_id.in_(pet_ids), Reminder.is_done == False).count() if pet_ids else 0
+    total_ai_records = AIConsultation.query.filter_by(user_id=current_user.id).count()
+
+    upcoming_reminders = []
+    if pet_ids:
+        upcoming_reminders = Reminder.query.filter(
+            Reminder.pet_id.in_(pet_ids),
+            Reminder.is_done == False
+        ).order_by(Reminder.reminder_date.asc()).limit(5).all()
+
+    latest_health_records = []
+    if pet_ids:
+        latest_health_records = HealthRecord.query.filter(
+            HealthRecord.pet_id.in_(pet_ids)
+        ).order_by(HealthRecord.record_date.desc()).limit(5).all()
 
     return render_template(
         "dashboard.html",
         pets=pets,
         pet_count=len(pets),
-        total_health_records=total_health_records
+        total_health_records=total_health_records,
+        total_medical_records=total_medical_records,
+        total_reminders=total_reminders,
+        total_ai_records=total_ai_records,
+        upcoming_reminders=upcoming_reminders,
+        latest_health_records=latest_health_records,
     )
 
 
 # =========================
-# 寵物資料 CRUD
+# 寵物 CRUD
 # =========================
 
 @app.route("/pets")
@@ -342,29 +452,33 @@ def add_pet():
         flash("寵物資料新增成功。")
         return redirect(url_for("pets"))
 
-    return render_template("add_pet.html")
+    return render_template("pet_form.html", mode="add", pet=None)
 
 
 @app.route("/pets/<int:pet_id>")
 @login_required
 def pet_detail(pet_id):
-    pet = Pet.query.filter_by(id=pet_id, user_id=current_user.id).first_or_404()
+    pet = get_user_pet_or_404(pet_id)
 
-    health_records = HealthRecord.query.filter_by(pet_id=pet.id).order_by(
-        HealthRecord.record_date.desc()
-    ).all()
+    health_records = HealthRecord.query.filter_by(pet_id=pet.id).order_by(HealthRecord.record_date.desc()).all()
+    medical_records = MedicalRecord.query.filter_by(pet_id=pet.id).order_by(MedicalRecord.visit_date.desc()).all()
+    reminders = Reminder.query.filter_by(pet_id=pet.id).order_by(Reminder.reminder_date.asc()).all()
+    ai_records = AIConsultation.query.filter_by(user_id=current_user.id, pet_id=pet.id).order_by(AIConsultation.created_at.desc()).all()
 
     return render_template(
         "pet_detail.html",
         pet=pet,
-        health_records=health_records
+        health_records=health_records,
+        medical_records=medical_records,
+        reminders=reminders,
+        ai_records=ai_records,
     )
 
 
 @app.route("/pets/<int:pet_id>/edit", methods=["GET", "POST"])
 @login_required
 def edit_pet(pet_id):
-    pet = Pet.query.filter_by(id=pet_id, user_id=current_user.id).first_or_404()
+    pet = get_user_pet_or_404(pet_id)
 
     if request.method == "POST":
         pet.name = request.form.get("name")
@@ -380,7 +494,6 @@ def edit_pet(pet_id):
 
         photo_file = request.files.get("photo_file")
         new_photo_url = save_uploaded_photo(photo_file)
-
         if new_photo_url:
             pet.photo_url = new_photo_url
 
@@ -389,13 +502,13 @@ def edit_pet(pet_id):
         flash("寵物資料已更新。")
         return redirect(url_for("pet_detail", pet_id=pet.id))
 
-    return render_template("edit_pet.html", pet=pet)
+    return render_template("pet_form.html", mode="edit", pet=pet)
 
 
 @app.route("/pets/<int:pet_id>/delete", methods=["POST"])
 @login_required
 def delete_pet(pet_id):
-    pet = Pet.query.filter_by(id=pet_id, user_id=current_user.id).first_or_404()
+    pet = get_user_pet_or_404(pet_id)
 
     db.session.delete(pet)
     db.session.commit()
@@ -414,9 +527,8 @@ def health_records():
     user_pets = Pet.query.filter_by(user_id=current_user.id).all()
     pet_ids = [pet.id for pet in user_pets]
 
-    if not pet_ids:
-        records = []
-    else:
+    records = []
+    if pet_ids:
         records = HealthRecord.query.filter(
             HealthRecord.pet_id.in_(pet_ids)
         ).order_by(HealthRecord.record_date.desc()).all()
@@ -427,49 +539,37 @@ def health_records():
 @app.route("/pets/<int:pet_id>/health/add", methods=["GET", "POST"])
 @login_required
 def add_health_record(pet_id):
-    pet = Pet.query.filter_by(id=pet_id, user_id=current_user.id).first_or_404()
+    pet = get_user_pet_or_404(pet_id)
 
     if request.method == "POST":
-        record_date = parse_date(request.form.get("record_date"))
-        weight = request.form.get("weight")
-        appetite = request.form.get("appetite")
-        activity = request.form.get("activity")
-        symptoms = request.form.get("symptoms")
-        medication = request.form.get("medication")
-        note = request.form.get("note")
-
-        new_record = HealthRecord(
+        record = HealthRecord(
             pet_id=pet.id,
-            record_date=record_date,
-            weight=float(weight) if weight else None,
-            appetite=appetite,
-            activity=activity,
-            symptoms=symptoms,
-            medication=medication,
-            note=note,
+            record_date=parse_date(request.form.get("record_date")),
+            weight=float(request.form.get("weight")) if request.form.get("weight") else None,
+            appetite=request.form.get("appetite"),
+            activity=request.form.get("activity"),
+            symptoms=request.form.get("symptoms"),
+            medication=request.form.get("medication"),
+            note=request.form.get("note"),
         )
 
-        db.session.add(new_record)
+        db.session.add(record)
         db.session.commit()
 
         flash("健康紀錄新增成功。")
         return redirect(url_for("pet_detail", pet_id=pet.id))
 
-    return render_template("add_health_record.html", pet=pet)
+    return render_template("health_form.html", mode="add", pet=pet, record=None)
 
 
 @app.route("/health/<int:record_id>/edit", methods=["GET", "POST"])
 @login_required
 def edit_health_record(record_id):
-    record = HealthRecord.query.get_or_404(record_id)
-    pet = Pet.query.filter_by(id=record.pet_id, user_id=current_user.id).first_or_404()
+    record, pet = get_user_health_record_or_404(record_id)
 
     if request.method == "POST":
         record.record_date = parse_date(request.form.get("record_date"))
-
-        weight = request.form.get("weight")
-        record.weight = float(weight) if weight else None
-
+        record.weight = float(request.form.get("weight")) if request.form.get("weight") else None
         record.appetite = request.form.get("appetite")
         record.activity = request.form.get("activity")
         record.symptoms = request.form.get("symptoms")
@@ -481,14 +581,13 @@ def edit_health_record(record_id):
         flash("健康紀錄已更新。")
         return redirect(url_for("pet_detail", pet_id=pet.id))
 
-    return render_template("edit_health_record.html", pet=pet, record=record)
+    return render_template("health_form.html", mode="edit", pet=pet, record=record)
 
 
 @app.route("/health/<int:record_id>/delete", methods=["POST"])
 @login_required
 def delete_health_record(record_id):
-    record = HealthRecord.query.get_or_404(record_id)
-    pet = Pet.query.filter_by(id=record.pet_id, user_id=current_user.id).first_or_404()
+    record, pet = get_user_health_record_or_404(record_id)
 
     db.session.delete(record)
     db.session.commit()
@@ -498,18 +597,195 @@ def delete_health_record(record_id):
 
 
 # =========================
+# 就醫紀錄 CRUD
+# =========================
+
+@app.route("/medical-records")
+@login_required
+def medical_records():
+    user_pets = Pet.query.filter_by(user_id=current_user.id).all()
+    pet_ids = [pet.id for pet in user_pets]
+
+    records = []
+    if pet_ids:
+        records = MedicalRecord.query.filter(
+            MedicalRecord.pet_id.in_(pet_ids)
+        ).order_by(MedicalRecord.visit_date.desc()).all()
+
+    return render_template("medical_records.html", records=records)
+
+
+@app.route("/pets/<int:pet_id>/medical/add", methods=["GET", "POST"])
+@login_required
+def add_medical_record(pet_id):
+    pet = get_user_pet_or_404(pet_id)
+
+    if request.method == "POST":
+        record = MedicalRecord(
+            pet_id=pet.id,
+            visit_date=parse_date(request.form.get("visit_date")),
+            clinic_name=request.form.get("clinic_name"),
+            diagnosis=request.form.get("diagnosis"),
+            medicine=request.form.get("medicine"),
+            doctor_advice=request.form.get("doctor_advice"),
+            note=request.form.get("note"),
+        )
+
+        db.session.add(record)
+        db.session.commit()
+
+        flash("就醫紀錄新增成功。")
+        return redirect(url_for("pet_detail", pet_id=pet.id))
+
+    return render_template("medical_form.html", mode="add", pet=pet, record=None)
+
+
+@app.route("/medical/<int:record_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit_medical_record(record_id):
+    record, pet = get_user_medical_record_or_404(record_id)
+
+    if request.method == "POST":
+        record.visit_date = parse_date(request.form.get("visit_date"))
+        record.clinic_name = request.form.get("clinic_name")
+        record.diagnosis = request.form.get("diagnosis")
+        record.medicine = request.form.get("medicine")
+        record.doctor_advice = request.form.get("doctor_advice")
+        record.note = request.form.get("note")
+
+        db.session.commit()
+
+        flash("就醫紀錄已更新。")
+        return redirect(url_for("pet_detail", pet_id=pet.id))
+
+    return render_template("medical_form.html", mode="edit", pet=pet, record=record)
+
+
+@app.route("/medical/<int:record_id>/delete", methods=["POST"])
+@login_required
+def delete_medical_record(record_id):
+    record, pet = get_user_medical_record_or_404(record_id)
+
+    db.session.delete(record)
+    db.session.commit()
+
+    flash("就醫紀錄已刪除。")
+    return redirect(url_for("pet_detail", pet_id=pet.id))
+
+
+# =========================
+# 提醒事項 CRUD
+# =========================
+
+@app.route("/reminders")
+@login_required
+def reminders():
+    user_pets = Pet.query.filter_by(user_id=current_user.id).all()
+    pet_ids = [pet.id for pet in user_pets]
+
+    reminders_list = []
+    if pet_ids:
+        reminders_list = Reminder.query.filter(
+            Reminder.pet_id.in_(pet_ids)
+        ).order_by(Reminder.is_done.asc(), Reminder.reminder_date.asc()).all()
+
+    return render_template("reminders.html", reminders=reminders_list)
+
+
+@app.route("/pets/<int:pet_id>/reminder/add", methods=["GET", "POST"])
+@login_required
+def add_reminder(pet_id):
+    pet = get_user_pet_or_404(pet_id)
+
+    if request.method == "POST":
+        reminder = Reminder(
+            pet_id=pet.id,
+            reminder_type=request.form.get("reminder_type"),
+            reminder_date=parse_date(request.form.get("reminder_date")),
+            note=request.form.get("note"),
+            is_done=False,
+        )
+
+        db.session.add(reminder)
+        db.session.commit()
+
+        flash("提醒事項新增成功。")
+        return redirect(url_for("pet_detail", pet_id=pet.id))
+
+    return render_template("reminder_form.html", mode="add", pet=pet, reminder=None)
+
+
+@app.route("/reminder/<int:reminder_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit_reminder(reminder_id):
+    reminder, pet = get_user_reminder_or_404(reminder_id)
+
+    if request.method == "POST":
+        reminder.reminder_type = request.form.get("reminder_type")
+        reminder.reminder_date = parse_date(request.form.get("reminder_date"))
+        reminder.note = request.form.get("note")
+        reminder.is_done = True if request.form.get("is_done") == "on" else False
+
+        db.session.commit()
+
+        flash("提醒事項已更新。")
+        return redirect(url_for("pet_detail", pet_id=pet.id))
+
+    return render_template("reminder_form.html", mode="edit", pet=pet, reminder=reminder)
+
+
+@app.route("/reminder/<int:reminder_id>/done", methods=["POST"])
+@login_required
+def toggle_reminder_done(reminder_id):
+    reminder, pet = get_user_reminder_or_404(reminder_id)
+
+    reminder.is_done = not reminder.is_done
+    db.session.commit()
+
+    flash("提醒狀態已更新。")
+    return redirect(request.referrer or url_for("reminders"))
+
+
+@app.route("/reminder/<int:reminder_id>/delete", methods=["POST"])
+@login_required
+def delete_reminder(reminder_id):
+    reminder, pet = get_user_reminder_or_404(reminder_id)
+
+    db.session.delete(reminder)
+    db.session.commit()
+
+    flash("提醒事項已刪除。")
+    return redirect(url_for("pet_detail", pet_id=pet.id))
+
+
+# =========================
 # AI 初步健康建議
 # =========================
 
 @app.route("/ai", methods=["POST"])
 def ai():
-    pet_name = request.form["pet_name"]
-    species = request.form["species"]
-    breed = request.form["breed"]
-    gender = request.form["gender"]
-    age = request.form["age"]
-    weight = request.form["weight"]
-    symptom = request.form["symptom"]
+    pet_id = request.form.get("pet_id")
+
+    selected_pet = None
+    if current_user.is_authenticated and pet_id:
+        selected_pet = Pet.query.filter_by(id=pet_id, user_id=current_user.id).first()
+
+    if selected_pet:
+        pet_name = selected_pet.name
+        species = selected_pet.species
+        breed = selected_pet.breed or ""
+        gender = selected_pet.gender or ""
+        age = selected_pet.age or ""
+        weight = str(selected_pet.weight or "")
+    else:
+        pet_name = request.form.get("pet_name")
+        species = request.form.get("species")
+        breed = request.form.get("breed")
+        gender = request.form.get("gender")
+        age = request.form.get("age")
+        weight = request.form.get("weight")
+
+    symptom = request.form.get("symptom")
 
     risk_score, risk_level, risk_color, risk_advice = calculate_risk_score(
         age, weight, symptom
@@ -569,6 +845,24 @@ def ai():
     except Exception as e:
         answer = f"AI 回覆產生失敗，請確認 Render 是否已設定 GROQ_API_KEY。錯誤訊息：{str(e)}"
 
+    if current_user.is_authenticated:
+        consultation = AIConsultation(
+            user_id=current_user.id,
+            pet_id=selected_pet.id if selected_pet else None,
+            pet_name=pet_name,
+            species=species,
+            breed=breed,
+            gender=gender,
+            age=age,
+            weight=weight,
+            symptom=symptom,
+            risk_score=risk_score,
+            risk_level=risk_level,
+            ai_answer=answer,
+        )
+        db.session.add(consultation)
+        db.session.commit()
+
     pet_info = {
         "pet_name": pet_name,
         "species": species,
@@ -579,8 +873,13 @@ def ai():
         "symptom": symptom,
     }
 
+    pets = []
+    if current_user.is_authenticated:
+        pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
+
     return render_template(
         "home.html",
+        pets=pets,
         answer=answer,
         pet_info=pet_info,
         risk_score=risk_score,
@@ -588,6 +887,19 @@ def ai():
         risk_color=risk_color,
         risk_advice=risk_advice,
     )
+
+
+# =========================
+# 健康報告
+# =========================
+
+@app.route("/report")
+@login_required
+def report():
+    pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
+    ai_records = AIConsultation.query.filter_by(user_id=current_user.id).order_by(AIConsultation.created_at.desc()).all()
+
+    return render_template("report.html", pets=pets, ai_records=ai_records)
 
 
 with app.app_context():
