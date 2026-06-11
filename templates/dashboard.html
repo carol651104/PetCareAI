@@ -44,6 +44,7 @@
             text-decoration: none;
             font-weight: bold;
             margin-right: 8px;
+            margin-top: 8px;
         }
 
         .btn-brown {
@@ -85,6 +86,24 @@
             margin-top: 28px;
         }
 
+        .pet-list {
+            margin-top: 16px;
+            line-height: 1.9;
+        }
+
+        .pet-item {
+            background: #f6f8ff;
+            padding: 14px 18px;
+            border-radius: 14px;
+            margin-bottom: 10px;
+        }
+
+        .pet-item a {
+            color: #b87333;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
         @media (max-width: 800px) {
             .topbar {
                 display: block;
@@ -92,10 +111,6 @@
 
             .grid {
                 grid-template-columns: 1fr;
-            }
-
-            .btn {
-                margin-top: 10px;
             }
         }
     </style>
@@ -114,6 +129,7 @@
 
         <div>
             <a class="btn" href="/">AI 症狀分析</a>
+            <a class="btn" href="/features">8 大功能</a>
             <a class="btn btn-brown" href="/logout">登出</a>
         </div>
     </div>
@@ -122,30 +138,40 @@
         <div class="card">
             <h3>寵物資料</h3>
             <p>管理你的寵物基本資料。</p>
-            <div class="number">0</div>
+            <div class="number">{{ pet_count }}</div>
+            <a class="btn" href="/pets">管理寵物</a>
         </div>
 
         <div class="card">
             <h3>健康紀錄</h3>
-            <p>追蹤體重、食慾、活動量與症狀。</p>
+            <p>之後可追蹤體重、食慾、活動量與症狀。</p>
             <div class="number">0</div>
         </div>
 
         <div class="card">
             <h3>提醒事項</h3>
-            <p>管理疫苗、驅蟲、健檢與回診提醒。</p>
+            <p>之後可管理疫苗、驅蟲、健檢與回診提醒。</p>
             <div class="number">0</div>
         </div>
     </div>
 
     <div class="section">
-        <h3>目前系統進度</h3>
-        <p>
-            你現在已完成登入系統與資料庫骨架。下一階段會加入寵物資料管理功能，
-            讓使用者可以新增、查看與管理自己的寵物資料。
-        </p>
+        <h3>我的寵物</h3>
 
-        <a class="btn" href="/features">查看 8 大功能</a>
+        {% if pets %}
+            <div class="pet-list">
+                {% for pet in pets %}
+                    <div class="pet-item">
+                        {{ pet.name }}｜{{ pet.species }}｜
+                        <a href="/pets/{{ pet.id }}">查看詳細資料</a>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>目前尚未新增寵物資料。</p>
+        {% endif %}
+
+        <a class="btn" href="/pets/add">新增寵物</a>
     </div>
 </div>
 
