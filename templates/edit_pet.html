@@ -52,6 +52,29 @@
             resize: vertical;
         }
 
+        .preview {
+            margin-top: 14px;
+            background: #f6f8ff;
+            padding: 16px;
+            border-radius: 16px;
+        }
+
+        .preview img {
+            max-width: 220px;
+            max-height: 180px;
+            border-radius: 14px;
+            object-fit: cover;
+            display: block;
+            margin-top: 10px;
+        }
+
+        .hint {
+            font-size: 14px;
+            color: #777;
+            margin-top: 6px;
+            line-height: 1.6;
+        }
+
         .actions {
             margin-top: 26px;
         }
@@ -81,7 +104,7 @@
     <h1>修改寵物資料</h1>
     <p>更新 {{ pet.name }} 的基本資料。</p>
 
-    <form method="POST">
+    <form method="POST" enctype="multipart/form-data">
         <label>寵物名稱 *</label>
         <input type="text" name="name" value="{{ pet.name }}" required>
 
@@ -90,6 +113,17 @@
             <option value="貓" {% if pet.species == "貓" %}selected{% endif %}>貓</option>
             <option value="狗" {% if pet.species == "狗" %}selected{% endif %}>狗</option>
             <option value="兔子" {% if pet.species == "兔子" %}selected{% endif %}>兔子</option>
+            <option value="倉鼠" {% if pet.species == "倉鼠" %}selected{% endif %}>倉鼠</option>
+            <option value="天竺鼠" {% if pet.species == "天竺鼠" %}selected{% endif %}>天竺鼠</option>
+            <option value="鳥類" {% if pet.species == "鳥類" %}selected{% endif %}>鳥類</option>
+            <option value="鸚鵡" {% if pet.species == "鸚鵡" %}selected{% endif %}>鸚鵡</option>
+            <option value="烏龜" {% if pet.species == "烏龜" %}selected{% endif %}>烏龜</option>
+            <option value="魚類" {% if pet.species == "魚類" %}selected{% endif %}>魚類</option>
+            <option value="蜥蜴" {% if pet.species == "蜥蜴" %}selected{% endif %}>蜥蜴</option>
+            <option value="蛇" {% if pet.species == "蛇" %}selected{% endif %}>蛇</option>
+            <option value="刺蝟" {% if pet.species == "刺蝟" %}selected{% endif %}>刺蝟</option>
+            <option value="蜜袋鼯" {% if pet.species == "蜜袋鼯" %}selected{% endif %}>蜜袋鼯</option>
+            <option value="雪貂" {% if pet.species == "雪貂" %}selected{% endif %}>雪貂</option>
             <option value="其他" {% if pet.species == "其他" %}selected{% endif %}>其他</option>
         </select>
 
@@ -110,8 +144,16 @@
         <label>體重 kg</label>
         <input type="number" step="0.1" name="weight" value="{{ pet.weight or '' }}">
 
-        <label>照片網址</label>
-        <input type="url" name="photo_url" value="{{ pet.photo_url or '' }}">
+        <label>更換照片</label>
+        <input type="file" name="photo_file" accept="image/png, image/jpeg, image/jpg, image/gif, image/webp">
+        <div class="hint">如果不選新照片，會保留原本照片。</div>
+
+        {% if pet.photo_url %}
+            <div class="preview">
+                目前照片：
+                <img src="{{ pet.photo_url }}" alt="{{ pet.name }}">
+            </div>
+        {% endif %}
 
         <label>備註</label>
         <textarea name="note">{{ pet.note or '' }}</textarea>
