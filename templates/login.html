@@ -2,82 +2,118 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>會員登入與帳號管理</title>
+    <title>登入 - PetCareAI</title>
+
     <style>
         body {
+            margin: 0;
             font-family: "Microsoft JhengHei", sans-serif;
             background: #faf7f4;
-            padding: 50px;
             color: #222;
         }
 
-        .box {
-            max-width: 760px;
-            margin: auto;
+        .container {
+            max-width: 520px;
+            margin: 80px auto;
             background: white;
             padding: 42px;
             border-radius: 24px;
-            box-shadow: 0 8px 24px rgba(0,0,0,.06);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
         }
 
         h1 {
             color: #b87333;
+            margin-bottom: 12px;
         }
 
         p {
-            line-height: 1.8;
-            font-size: 17px;
+            line-height: 1.7;
+            color: #555;
+        }
+
+        label {
+            display: block;
+            margin-top: 18px;
+            font-weight: bold;
         }
 
         input {
             width: 100%;
-            padding: 14px;
-            margin: 10px 0;
+            padding: 13px;
+            margin-top: 8px;
             border: 1px solid #ddd;
             border-radius: 12px;
             font-size: 16px;
             box-sizing: border-box;
         }
 
-        button, a {
-            display: inline-block;
-            margin-top: 16px;
-            padding: 12px 22px;
-            background: #8eb4f7;
-            color: white;
+        button {
+            width: 100%;
+            margin-top: 24px;
+            padding: 13px;
             border: none;
             border-radius: 999px;
-            text-decoration: none;
+            background: #8eb4f7;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
             cursor: pointer;
         }
 
-        .note {
-            margin-top: 26px;
-            background: #f6f8ff;
-            padding: 18px;
-            border-radius: 16px;
+        button:hover {
+            background: #75a1ef;
+        }
+
+        a {
+            color: #b87333;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .links {
+            margin-top: 22px;
+            line-height: 1.8;
+        }
+
+        .flash {
+            background: #fff6e8;
+            color: #8a4f1d;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 18px;
         }
     </style>
 </head>
+
 <body>
-<div class="box">
-    <h1>會員登入與帳號管理</h1>
 
-    <p>
-        此功能讓不同飼主可以建立帳號，登入後管理自己的寵物資料、健康紀錄、提醒事項與 AI 健康建議結果。
-    </p>
+<div class="container">
+    <h1>登入 PetCareAI</h1>
+    <p>登入後即可進入個人 Dashboard，管理寵物健康資料。</p>
 
-    <input type="email" placeholder="電子郵件">
-    <input type="password" placeholder="密碼">
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="flash">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
 
-    <button>登入展示</button>
+    <form method="POST">
+        <label>Email</label>
+        <input type="email" name="email" placeholder="example@email.com" required>
 
-    <div class="note">
-        <strong>目前狀態：</strong><br>
-        此頁為前端展示版，未來將加入註冊、登入、登出、密碼驗證與使用者資料庫。
+        <label>密碼</label>
+        <input type="password" name="password" placeholder="請輸入密碼" required>
+
+        <button type="submit">登入</button>
+    </form>
+
+    <div class="links">
+        還沒有帳號？<a href="/register">前往註冊</a><br>
+        <a href="/">返回首頁</a>
     </div>
-
-    <a href="/features">返回功能列表</a>
 </div>
+
 </body>
 </html>
