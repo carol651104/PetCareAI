@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}PetCareAI{% endblock %}</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: "Microsoft JhengHei", sans-serif;
+            background: #faf7f4;
+            color: #222;
+        }
+
+        .page {
+            max-width: 1120px;
+            margin: auto;
+            padding: 42px 24px;
+        }
+
+        .nav {
+            max-width: 1120px;
+            margin: auto;
+            padding: 20px 24px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            color: #b87333;
+            font-weight: bold;
+            font-size: 22px;
+            text-decoration: none;
+        }
+
+        .nav-links a {
+            margin-left: 12px;
+            color: #b87333;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        h1, h2, h3 {
+            color: #b87333;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 18px;
+            background: #8eb4f7;
+            color: white;
+            border-radius: 999px;
+            text-decoration: none;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            margin: 6px 6px 6px 0;
+            font-size: 14px;
+        }
+
+        .btn:hover {
+            background: #75a1ef;
+            color: white;
+        }
+
+        .btn-brown {
+            background: #b87333;
+        }
+
+        .btn-brown:hover {
+            background: #9f622c;
+        }
+
+        .btn-danger {
+            background: #e06b6b;
+        }
+
+        .btn-green {
+            background: #70b77e;
+        }
+
+        .card {
+            background: white;
+            padding: 28px;
+            border-radius: 22px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+            margin-bottom: 22px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 22px;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 22px;
+        }
+
+        label {
+            display: block;
+            margin-top: 16px;
+            font-weight: bold;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 13px;
+            margin-top: 8px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+            box-sizing: border-box;
+            font-family: "Microsoft JhengHei", sans-serif;
+        }
+
+        textarea {
+            min-height: 110px;
+            resize: vertical;
+        }
+
+        .flash {
+            background: #fff6e8;
+            color: #8a4f1d;
+            padding: 12px 16px;
+            border-radius: 14px;
+            margin-bottom: 18px;
+        }
+
+        .muted {
+            color: #666;
+            line-height: 1.8;
+        }
+
+        .record {
+            background: #f6f8ff;
+            padding: 18px;
+            border-radius: 16px;
+            margin-top: 14px;
+            line-height: 1.9;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 7px 12px;
+            border-radius: 999px;
+            color: white;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .done {
+            background: #70b77e;
+        }
+
+        .pending {
+            background: #e6a14f;
+        }
+
+        @media (max-width: 900px) {
+            .grid-3, .grid-4 {
+                grid-template-columns: 1fr;
+            }
+
+            .nav {
+                display: block;
+            }
+
+            .nav-links {
+                margin-top: 12px;
+            }
+
+            .nav-links a {
+                display: inline-block;
+                margin: 6px 8px 0 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="nav">
+    <a class="brand" href="/">PetCareAI</a>
+
+    <div class="nav-links">
+        <a href="/features">功能</a>
+
+        {% if current_user.is_authenticated %}
+            <a href="/dashboard">Dashboard</a>
+            <a href="/pets">寵物</a>
+            <a href="/health-records">健康紀錄</a>
+            <a href="/medical-records">就醫紀錄</a>
+            <a href="/reminders">提醒</a>
+            <a href="/report">報告</a>
+            <a href="/logout">登出</a>
+        {% else %}
+            <a href="/login">登入</a>
+            <a href="/register">註冊</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="page">
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="flash">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+</div>
+
+</body>
+</html>
