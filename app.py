@@ -422,7 +422,11 @@ def dashboard():
         MedicalRecord.pet_id.in_(pet_ids)
     ).count() if pet_ids else 0
 
-    total_reminders = Reminder.query.filter(
+    total_all_reminders = Reminder.query.filter(
+        Reminder.pet_id.in_(pet_ids)
+    ).count() if pet_ids else 0
+
+    total_pending_reminders = Reminder.query.filter(
         Reminder.pet_id.in_(pet_ids),
         Reminder.is_done == False
     ).count() if pet_ids else 0
@@ -448,7 +452,8 @@ def dashboard():
         pet_count=len(pets),
         total_health_records=total_health_records,
         total_medical_records=total_medical_records,
-        total_reminders=total_reminders,
+        total_reminders=total_pending_reminders,
+        total_all_reminders=total_all_reminders,
         total_ai_records=total_ai_records,
         upcoming_reminders=upcoming_reminders,
         latest_health_records=latest_health_records,
