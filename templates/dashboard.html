@@ -11,29 +11,45 @@
     <div class="card stat-card">
         <h3>寵物資料</h3>
         <p class="muted">管理寵物基本資料。</p>
-        <div class="stat-number">{{ pet_count }}</div>
-        <a class="btn" href="/pets">管理寵物</a>
+
+        <div class="stat-bottom">
+            <div class="stat-number">{{ pet_count }}</div>
+            <div class="stat-meta">目前建立的寵物數量</div>
+            <a class="btn" href="/pets">管理寵物</a>
+        </div>
     </div>
 
     <div class="card stat-card">
         <h3>健康紀錄</h3>
         <p class="muted">追蹤體重、食慾、活動量與症狀。</p>
-        <div class="stat-number">{{ total_health_records }}</div>
-        <a class="btn" href="/health-records">查看健康紀錄</a>
+
+        <div class="stat-bottom">
+            <div class="stat-number">{{ total_health_records }}</div>
+            <div class="stat-meta">全部健康紀錄</div>
+            <a class="btn" href="/health-records">查看健康紀錄</a>
+        </div>
     </div>
 
     <div class="card stat-card">
         <h3>就醫紀錄</h3>
         <p class="muted">保存診斷、藥物與醫囑。</p>
-        <div class="stat-number">{{ total_medical_records }}</div>
-        <a class="btn" href="/medical-records">查看就醫紀錄</a>
+
+        <div class="stat-bottom">
+            <div class="stat-number">{{ total_medical_records }}</div>
+            <div class="stat-meta">全部就醫紀錄</div>
+            <a class="btn" href="/medical-records">查看就醫紀錄</a>
+        </div>
     </div>
 
     <div class="card stat-card">
-        <h3>提醒事項</h3>
-        <p class="muted">疫苗、驅蟲、健檢與回診提醒。</p>
-        <div class="stat-number">{{ total_reminders }}</div>
-        <a class="btn" href="/reminders">查看提醒</a>
+        <h3>待完成提醒</h3>
+        <p class="muted">尚未完成的疫苗、驅蟲、健檢與回診提醒。</p>
+
+        <div class="stat-bottom">
+            <div class="stat-number">{{ total_reminders }}</div>
+            <div class="stat-meta">全部提醒：{{ total_all_reminders }} 筆</div>
+            <a class="btn" href="/reminders">查看提醒</a>
+        </div>
     </div>
 </div>
 
@@ -65,7 +81,7 @@
 
 <div class="grid-3">
     <div class="card">
-        <h2>近期提醒</h2>
+        <h2>近期待完成提醒</h2>
         {% if upcoming_reminders %}
             {% for reminder in upcoming_reminders %}
                 <div class="record">
@@ -95,7 +111,7 @@
 
     <div class="card">
         <h2>AI 諮詢紀錄</h2>
-        <h1>{{ total_ai_records }}</h1>
+        <div class="stat-number">{{ total_ai_records }}</div>
         <p class="muted">AI 會結合寵物資料、健康紀錄、就醫紀錄與提醒事項提供建議。</p>
 
         <div class="card-actions">
