@@ -287,9 +287,9 @@ def calculate_risk_score(age, weight, symptom):
 @app.route("/")
 def home():
     if not current_user.is_authenticated:
-        return redirect(url_for("login"))
+        return redirect(url_for("dashboard"))
 
-    return redirect(url_for("dashboard"))
+    return render_template("login.html")
 
 
 @app.route("/ai-assistant")
