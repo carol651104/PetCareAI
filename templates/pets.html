@@ -7,12 +7,15 @@
 <h1>寵物資料管理</h1>
 <p class="muted">新增、查看、修改與刪除你的寵物基本資料。</p>
 
-<a class="btn btn-brown" href="/pets/add">新增寵物</a>
+<div class="card-actions">
+    <a class="btn btn-brown" href="/pets/add">新增寵物</a>
+    <a class="btn" href="/dashboard">返回 Dashboard</a>
+</div>
 
 {% if pets %}
 <div class="grid-3">
     {% for pet in pets %}
-        <div class="card">
+        <div class="card pet-card">
             {% if pet.photo_url %}
                 <img src="{{ pet.photo_url }}" style="width: 100%; height: 190px; object-fit: cover; border-radius: 18px;">
             {% else %}
@@ -20,6 +23,7 @@
             {% endif %}
 
             <h3>{{ pet.name }}</h3>
+
             <p>
                 物種：{{ pet.species }}<br>
                 品種：{{ pet.breed or "未填寫" }}<br>
@@ -28,12 +32,14 @@
                 體重：{{ pet.weight or "未填寫" }} kg
             </p>
 
-            <a class="btn" href="/pets/{{ pet.id }}">查看</a>
-            <a class="btn btn-brown" href="/pets/{{ pet.id }}/edit">修改</a>
+            <div class="card-actions">
+                <a class="btn" href="/pets/{{ pet.id }}">查看</a>
+                <a class="btn btn-brown" href="/pets/{{ pet.id }}/edit">修改</a>
 
-            <form method="POST" action="/pets/{{ pet.id }}/delete" onsubmit="return confirm('確定要刪除這隻寵物嗎？');">
-                <button class="btn btn-danger" type="submit">刪除</button>
-            </form>
+                <form method="POST" action="/pets/{{ pet.id }}/delete" onsubmit="return confirm('確定要刪除這隻寵物嗎？');">
+                    <button class="btn btn-danger" type="submit">刪除</button>
+                </form>
+            </div>
         </div>
     {% endfor %}
 </div>
