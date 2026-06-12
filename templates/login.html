@@ -7,12 +7,12 @@
     <h1>登入 PetCareAI</h1>
     <p class="muted">登入後即可進入個人 Dashboard，管理寵物健康資料。</p>
 
-    <form method="POST">
+    <form method="POST" action="/login">
         <label>Email</label>
-        <input type="email" name="email" required>
+        <input type="email" name="email" placeholder="example@email.com" required>
 
         <label>密碼</label>
-        <input type="password" name="password" required>
+        <input type="password" name="password" placeholder="請輸入密碼" required>
 
         <button class="btn btn-brown" type="submit">登入</button>
         <a class="btn" href="/register">前往註冊</a>
