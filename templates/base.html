@@ -34,15 +34,35 @@
             text-decoration: none;
         }
 
+        .nav-links {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
         .nav-links a {
-            margin-left: 12px;
             color: #b87333;
             font-weight: bold;
             text-decoration: none;
+            font-size: 14px;
         }
 
         h1, h2, h3 {
             color: #b87333;
+        }
+
+        h1 {
+            margin-top: 0;
+        }
+
+        p {
+            line-height: 1.8;
+        }
+
+        .muted {
+            color: #666;
+            line-height: 1.8;
         }
 
         .btn {
@@ -63,6 +83,7 @@
             font-family: "Microsoft JhengHei", sans-serif;
             box-sizing: border-box;
             white-space: nowrap;
+            line-height: 1;
         }
 
         .btn:hover {
@@ -104,18 +125,21 @@
             border-radius: 22px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.06);
             margin-bottom: 22px;
+            box-sizing: border-box;
         }
 
         .grid-3 {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 22px;
+            margin-top: 22px;
         }
 
         .grid-4 {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 22px;
+            margin-top: 22px;
         }
 
         .grid-4 > .card {
@@ -134,17 +158,13 @@
             line-height: 1;
         }
 
-        .muted {
-            color: #666;
-            line-height: 1.8;
-        }
-
         .record {
             background: #f6f8ff;
             padding: 18px;
             border-radius: 16px;
             margin-top: 14px;
             line-height: 1.9;
+            box-sizing: border-box;
         }
 
         .badge {
@@ -179,6 +199,7 @@
             font-size: 16px;
             box-sizing: border-box;
             font-family: "Microsoft JhengHei", sans-serif;
+            background: white;
         }
 
         textarea {
@@ -194,7 +215,10 @@
             margin-bottom: 18px;
         }
 
-        /* 統一按鈕橫向排列 */
+        /*
+            共用按鈕排列：
+            用在寵物卡片、健康紀錄、就醫紀錄、提醒事項、登入註冊按鈕。
+        */
         .card-actions,
         .record-actions {
             display: flex;
@@ -210,7 +234,10 @@
             display: inline-flex;
         }
 
-        /* 寵物卡片：讓按鈕固定在底部 */
+        /*
+            寵物列表卡片：
+            讓查看 / 修改 / 刪除固定在卡片底部。
+        */
         .pet-card {
             display: flex;
             flex-direction: column;
@@ -221,47 +248,122 @@
             margin-top: auto;
         }
 
-        /* Dashboard 統計卡片：數字與按鈕對齊 */
+        /*
+            Dashboard 統計卡片：
+            讓 4 個數字與按鈕上下位置一致。
+        */
         .stat-card {
-            min-height: 240px;
+            min-height: 250px;
             display: flex;
             flex-direction: column;
         }
 
-        .stat-card .stat-number {
+        .stat-bottom {
+            margin-top: auto;
+        }
+
+        .stat-number {
             font-size: 36px;
             font-weight: bold;
             color: #b87333;
-            margin-top: auto;
-            margin-bottom: 18px;
             line-height: 1;
+            margin-bottom: 10px;
+        }
+
+        .stat-meta {
+            color: #777;
+            font-size: 14px;
+            margin-bottom: 18px;
+            min-height: 20px;
+            line-height: 1.5;
         }
 
         .stat-card .btn {
             width: fit-content;
         }
 
-        @media (max-width: 900px) {
-            .grid-3, .grid-4 {
-                grid-template-columns: 1fr;
+        /*
+            表單頁面常用容器。
+        */
+        .form-card {
+            max-width: 760px;
+            margin: 40px auto;
+        }
+
+        @media (max-width: 1000px) {
+            .grid-4 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .grid-3 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 700px) {
+            .page {
+                padding: 30px 18px;
             }
 
             .nav {
                 display: block;
+                padding: 18px 18px 0;
             }
 
             .nav-links {
                 margin-top: 12px;
+                gap: 10px;
             }
 
-            .nav-links a {
-                display: inline-block;
-                margin: 6px 8px 0 0;
+            .grid-3,
+            .grid-4 {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 22px;
             }
 
             .card-actions,
             .record-actions {
                 align-items: flex-start;
+            }
+
+            .btn {
+                font-size: 13px;
+                padding: 10px 16px;
+            }
+
+            .pet-card {
+                min-height: auto;
+            }
+
+            .stat-card {
+                min-height: auto;
+            }
+        }
+
+        @media print {
+            .nav,
+            .btn,
+            .card-actions,
+            .record-actions {
+                display: none !important;
+            }
+
+            body {
+                background: white;
+            }
+
+            .page {
+                max-width: 100%;
+                padding: 0;
+            }
+
+            .card {
+                box-shadow: none;
+                border: 1px solid #ddd;
+                page-break-inside: avoid;
             }
         }
     </style>
