@@ -29,11 +29,13 @@
                 備註：{{ pet.note or "無" }}
             </p>
 
-            <a class="btn" href="/pets/{{ pet.id }}/edit">修改資料</a>
-            <a class="btn btn-green" href="/pets/{{ pet.id }}/health/add">新增健康紀錄</a>
-            <a class="btn" href="/pets/{{ pet.id }}/medical/add">新增就醫紀錄</a>
-            <a class="btn btn-brown" href="/pets/{{ pet.id }}/reminder/add">新增提醒</a>
-            <a class="btn" href="/ai-assistant">AI 健康助理</a>
+            <div class="card-actions">
+                <a class="btn" href="/pets/{{ pet.id }}/edit">修改資料</a>
+                <a class="btn btn-green" href="/pets/{{ pet.id }}/health/add">新增健康紀錄</a>
+                <a class="btn" href="/pets/{{ pet.id }}/medical/add">新增就醫紀錄</a>
+                <a class="btn btn-brown" href="/pets/{{ pet.id }}/reminder/add">新增提醒</a>
+                <a class="btn" href="/ai-assistant">AI 健康助理</a>
+            </div>
         </div>
     </div>
 </div>
@@ -52,10 +54,13 @@
                 用藥：{{ record.medication or "無" }}<br>
                 備註：{{ record.note or "無" }}<br>
 
-                <a class="btn btn-brown" href="/health/{{ record.id }}/edit">修改</a>
-                <form method="POST" action="/health/{{ record.id }}/delete" onsubmit="return confirm('確定刪除健康紀錄？');">
-                    <button class="btn btn-danger" type="submit">刪除</button>
-                </form>
+                <div class="record-actions">
+                    <a class="btn btn-brown" href="/health/{{ record.id }}/edit">修改</a>
+
+                    <form method="POST" action="/health/{{ record.id }}/delete" onsubmit="return confirm('確定刪除健康紀錄？');">
+                        <button class="btn btn-danger" type="submit">刪除</button>
+                    </form>
+                </div>
             </div>
         {% endfor %}
     {% else %}
@@ -76,10 +81,13 @@
                 醫囑：{{ record.doctor_advice or "無" }}<br>
                 備註：{{ record.note or "無" }}<br>
 
-                <a class="btn btn-brown" href="/medical/{{ record.id }}/edit">修改</a>
-                <form method="POST" action="/medical/{{ record.id }}/delete" onsubmit="return confirm('確定刪除就醫紀錄？');">
-                    <button class="btn btn-danger" type="submit">刪除</button>
-                </form>
+                <div class="record-actions">
+                    <a class="btn btn-brown" href="/medical/{{ record.id }}/edit">修改</a>
+
+                    <form method="POST" action="/medical/{{ record.id }}/delete" onsubmit="return confirm('確定刪除就醫紀錄？');">
+                        <button class="btn btn-danger" type="submit">刪除</button>
+                    </form>
+                </div>
             </div>
         {% endfor %}
     {% else %}
@@ -101,15 +109,17 @@
                 日期：{{ reminder.reminder_date }}<br>
                 備註：{{ reminder.note or "無" }}<br>
 
-                <form method="POST" action="/reminder/{{ reminder.id }}/done">
-                    <button class="btn btn-green" type="submit">切換完成狀態</button>
-                </form>
+                <div class="record-actions">
+                    <form method="POST" action="/reminder/{{ reminder.id }}/done">
+                        <button class="btn btn-green" type="submit">切換完成狀態</button>
+                    </form>
 
-                <a class="btn btn-brown" href="/reminder/{{ reminder.id }}/edit">修改</a>
+                    <a class="btn btn-brown" href="/reminder/{{ reminder.id }}/edit">修改</a>
 
-                <form method="POST" action="/reminder/{{ reminder.id }}/delete" onsubmit="return confirm('確定刪除提醒？');">
-                    <button class="btn btn-danger" type="submit">刪除</button>
-                </form>
+                    <form method="POST" action="/reminder/{{ reminder.id }}/delete" onsubmit="return confirm('確定刪除提醒？');">
+                        <button class="btn btn-danger" type="submit">刪除</button>
+                    </form>
+                </div>
             </div>
         {% endfor %}
     {% else %}
@@ -137,6 +147,9 @@
     {% endif %}
 </div>
 
-<a class="btn" href="/pets">返回寵物列表</a>
+<div class="card-actions">
+    <a class="btn" href="/pets">返回寵物列表</a>
+    <a class="btn btn-brown" href="/dashboard">返回 Dashboard</a>
+</div>
 
 {% endblock %}
