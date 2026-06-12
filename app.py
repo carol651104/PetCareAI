@@ -383,7 +383,7 @@ def login():
 
         user = User.query.filter_by(email=email).first()
 
-         if not user:
+        if not user:
             flash("尚無此帳號，請先註冊。")
             return redirect(url_for("login"))
              
