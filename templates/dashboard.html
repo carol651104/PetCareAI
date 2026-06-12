@@ -8,31 +8,31 @@
 <p class="muted">歡迎，{{ current_user.username }}。這裡是你的寵物健康管理中心。</p>
 
 <div class="grid-4">
-    <div class="card">
+    <div class="card stat-card">
         <h3>寵物資料</h3>
         <p class="muted">管理寵物基本資料。</p>
-        <h1>{{ pet_count }}</h1>
+        <div class="stat-number">{{ pet_count }}</div>
         <a class="btn" href="/pets">管理寵物</a>
     </div>
 
-    <div class="card">
+    <div class="card stat-card">
         <h3>健康紀錄</h3>
         <p class="muted">追蹤體重、食慾、活動量與症狀。</p>
-        <h1>{{ total_health_records }}</h1>
+        <div class="stat-number">{{ total_health_records }}</div>
         <a class="btn" href="/health-records">查看健康紀錄</a>
     </div>
 
-    <div class="card">
+    <div class="card stat-card">
         <h3>就醫紀錄</h3>
         <p class="muted">保存診斷、藥物與醫囑。</p>
-        <h1>{{ total_medical_records }}</h1>
+        <div class="stat-number">{{ total_medical_records }}</div>
         <a class="btn" href="/medical-records">查看就醫紀錄</a>
     </div>
 
-    <div class="card">
+    <div class="card stat-card">
         <h3>提醒事項</h3>
         <p class="muted">疫苗、驅蟲、健檢與回診提醒。</p>
-        <h1>{{ total_reminders }}</h1>
+        <div class="stat-number">{{ total_reminders }}</div>
         <a class="btn" href="/reminders">查看提醒</a>
     </div>
 </div>
@@ -44,19 +44,23 @@
         {% for pet in pets %}
             <div class="record">
                 {{ pet.name }}｜{{ pet.species }}
-                <br>
-                <a class="btn" href="/pets/{{ pet.id }}">查看詳細資料</a>
-                <a class="btn btn-green" href="/pets/{{ pet.id }}/health/add">新增健康紀錄</a>
-                <a class="btn" href="/pets/{{ pet.id }}/medical/add">新增就醫紀錄</a>
-                <a class="btn btn-brown" href="/pets/{{ pet.id }}/reminder/add">新增提醒</a>
-                <a class="btn" href="/ai-assistant">AI 健康助理</a>
+
+                <div class="record-actions">
+                    <a class="btn" href="/pets/{{ pet.id }}">查看詳細資料</a>
+                    <a class="btn btn-green" href="/pets/{{ pet.id }}/health/add">新增健康紀錄</a>
+                    <a class="btn" href="/pets/{{ pet.id }}/medical/add">新增就醫紀錄</a>
+                    <a class="btn btn-brown" href="/pets/{{ pet.id }}/reminder/add">新增提醒</a>
+                    <a class="btn" href="/ai-assistant">AI 健康助理</a>
+                </div>
             </div>
         {% endfor %}
     {% else %}
         <p class="muted">目前尚未新增寵物資料。</p>
     {% endif %}
 
-    <a class="btn btn-brown" href="/pets/add">新增寵物</a>
+    <div class="card-actions">
+        <a class="btn btn-brown" href="/pets/add">新增寵物</a>
+    </div>
 </div>
 
 <div class="grid-3">
@@ -93,7 +97,10 @@
         <h2>AI 諮詢紀錄</h2>
         <h1>{{ total_ai_records }}</h1>
         <p class="muted">AI 會結合寵物資料、健康紀錄、就醫紀錄與提醒事項提供建議。</p>
-        <a class="btn" href="/ai-assistant">使用 AI 健康助理</a>
+
+        <div class="card-actions">
+            <a class="btn" href="/ai-assistant">使用 AI 健康助理</a>
+        </div>
     </div>
 </div>
 
