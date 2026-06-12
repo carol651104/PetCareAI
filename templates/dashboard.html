@@ -49,6 +49,7 @@
                 <a class="btn btn-green" href="/pets/{{ pet.id }}/health/add">新增健康紀錄</a>
                 <a class="btn" href="/pets/{{ pet.id }}/medical/add">新增就醫紀錄</a>
                 <a class="btn btn-brown" href="/pets/{{ pet.id }}/reminder/add">新增提醒</a>
+                <a class="btn" href="/ai-assistant">AI 健康助理</a>
             </div>
         {% endfor %}
     {% else %}
@@ -91,8 +92,8 @@
     <div class="card">
         <h2>AI 諮詢紀錄</h2>
         <h1>{{ total_ai_records }}</h1>
-        <p class="muted">登入後使用 AI 分析，結果會自動保存。</p>
-        <a class="btn" href="/">使用 AI 分析</a>
+        <p class="muted">AI 會結合寵物資料、健康紀錄、就醫紀錄與提醒事項提供建議。</p>
+        <a class="btn" href="/ai-assistant">使用 AI 健康助理</a>
     </div>
 </div>
 
