@@ -70,6 +70,7 @@ def save_uploaded_photo(file):
 def parse_date(date_string):
     if not date_string:
         return datetime.utcnow().date()
+
     return datetime.strptime(date_string, "%Y-%m-%d").date()
 
 
@@ -248,9 +249,32 @@ def calculate_risk_score(age, weight, symptom):
     if weight <= 2 and weight > 0:
         score += 15
 
-    high_risk_keywords = ["吐血", "血尿", "抽搐", "昏倒", "呼吸困難", "不吃飯", "持續嘔吐"]
-    medium_risk_keywords = ["嘔吐", "拉肚子", "流鼻水", "咳嗽", "精神不好", "發燒"]
-    low_risk_keywords = ["打噴嚏", "抓癢", "掉毛", "食慾正常", "精神正常"]
+    high_risk_keywords = [
+        "吐血",
+        "血尿",
+        "抽搐",
+        "昏倒",
+        "呼吸困難",
+        "不吃飯",
+        "持續嘔吐",
+    ]
+
+    medium_risk_keywords = [
+        "嘔吐",
+        "拉肚子",
+        "流鼻水",
+        "咳嗽",
+        "精神不好",
+        "發燒",
+    ]
+
+    low_risk_keywords = [
+        "打噴嚏",
+        "抓癢",
+        "掉毛",
+        "食慾正常",
+        "精神正常",
+    ]
 
     for word in high_risk_keywords:
         if word in symptom:
@@ -281,12 +305,12 @@ def calculate_risk_score(age, weight, symptom):
 
 
 # =========================
-# 首頁 / AI 助理頁
+# 首頁 / AI 助理頁 / 健康檢查
 # =========================
 
 @app.route("/")
 def home():
-    if not current_user.is_authenticated:
+    if current_user.is_authenticated:
         return redirect(url_for("dashboard"))
 
     return render_template("login.html")
@@ -304,8 +328,13 @@ def features():
     return render_template("features.html")
 
 
+@app.route("/healthz")
+def healthz():
+    return "OK", 200
+
+
 # =========================
-# 會員登入
+# 會員註冊 / 登入 / 登出
 # =========================
 
 @app.route("/register", methods=["GET", "POST"])
@@ -336,8 +365,9 @@ def register():
         db.session.add(new_user)
         db.session.commit()
 
-        flash("註冊成功，請登入。")
-        return redirect(url_for("login"))
+        login_user(new_user)
+        flash("註冊成功，已自動登入。")
+        return redirect(url_for("dashboard"))
 
     return render_template("register.html")
 
@@ -380,9 +410,19 @@ def dashboard():
     pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
     pet_ids = [pet.id for pet in pets]
 
-    total_health_records = HealthRecord.query.filter(HealthRecord.pet_id.in_(pet_ids)).count() if pet_ids else 0
-    total_medical_records = MedicalRecord.query.filter(MedicalRecord.pet_id.in_(pet_ids)).count() if pet_ids else 0
-    total_reminders = Reminder.query.filter(Reminder.pet_id.in_(pet_ids), Reminder.is_done == False).count() if pet_ids else 0
+    total_health_records = HealthRecord.query.filter(
+        HealthRecord.pet_id.in_(pet_ids)
+    ).count() if pet_ids else 0
+
+    total_medical_records = MedicalRecord.query.filter(
+        MedicalRecord.pet_id.in_(pet_ids)
+    ).count() if pet_ids else 0
+
+    total_reminders = Reminder.query.filter(
+        Reminder.pet_id.in_(pet_ids),
+        Reminder.is_done == False
+    ).count() if pet_ids else 0
+
     total_ai_records = AIConsultation.query.filter_by(user_id=current_user.id).count()
 
     upcoming_reminders = []
@@ -412,7 +452,7 @@ def dashboard():
 
 
 # =========================
-# 寵物 CRUD
+# 寵物資料 CRUD
 # =========================
 
 @app.route("/pets")
@@ -467,10 +507,22 @@ def add_pet():
 def pet_detail(pet_id):
     pet = get_user_pet_or_404(pet_id)
 
-    health_records = HealthRecord.query.filter_by(pet_id=pet.id).order_by(HealthRecord.record_date.desc()).all()
-    medical_records = MedicalRecord.query.filter_by(pet_id=pet.id).order_by(MedicalRecord.visit_date.desc()).all()
-    reminders = Reminder.query.filter_by(pet_id=pet.id).order_by(Reminder.reminder_date.asc()).all()
-    ai_records = AIConsultation.query.filter_by(user_id=current_user.id, pet_id=pet.id).order_by(AIConsultation.created_at.desc()).all()
+    health_records = HealthRecord.query.filter_by(pet_id=pet.id).order_by(
+        HealthRecord.record_date.desc()
+    ).all()
+
+    medical_records = MedicalRecord.query.filter_by(pet_id=pet.id).order_by(
+        MedicalRecord.visit_date.desc()
+    ).all()
+
+    reminders = Reminder.query.filter_by(pet_id=pet.id).order_by(
+        Reminder.reminder_date.asc()
+    ).all()
+
+    ai_records = AIConsultation.query.filter_by(
+        user_id=current_user.id,
+        pet_id=pet.id
+    ).order_by(AIConsultation.created_at.desc()).all()
 
     return render_template(
         "pet_detail.html",
@@ -501,6 +553,7 @@ def edit_pet(pet_id):
 
         photo_file = request.files.get("photo_file")
         new_photo_url = save_uploaded_photo(photo_file)
+
         if new_photo_url:
             pet.photo_url = new_photo_url
 
@@ -796,10 +849,10 @@ def ai():
             .limit(3)\
             .all()
 
-        pending_reminders = Reminder.query.filter_by(pet_id=selected_pet.id, is_done=False)\
-            .order_by(Reminder.reminder_date.asc())\
-            .limit(5)\
-            .all()
+        pending_reminders = Reminder.query.filter_by(
+            pet_id=selected_pet.id,
+            is_done=False
+        ).order_by(Reminder.reminder_date.asc()).limit(5).all()
     else:
         pet_name = request.form.get("pet_name", "")
         species = request.form.get("species", "")
