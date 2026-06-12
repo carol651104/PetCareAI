@@ -21,16 +21,19 @@
                 備註：{{ reminder.note or "無" }}
             </p>
 
-            <form method="POST" action="/reminder/{{ reminder.id }}/done">
-                <button class="btn btn-green" type="submit">切換完成狀態</button>
-            </form>
+            <div class="record-actions">
+                <form method="POST" action="/reminder/{{ reminder.id }}/done">
+                    <button class="btn btn-green" type="submit">切換完成狀態</button>
+                </form>
 
-            <a class="btn" href="/pets/{{ reminder.pet.id }}">查看寵物</a>
-            <a class="btn btn-brown" href="/reminder/{{ reminder.id }}/edit">修改</a>
+                <a class="btn" href="/pets/{{ reminder.pet.id }}">查看寵物</a>
 
-            <form method="POST" action="/reminder/{{ reminder.id }}/delete" onsubmit="return confirm('確定刪除提醒？');">
-                <button class="btn btn-danger" type="submit">刪除</button>
-            </form>
+                <a class="btn btn-brown" href="/reminder/{{ reminder.id }}/edit">修改</a>
+
+                <form method="POST" action="/reminder/{{ reminder.id }}/delete" onsubmit="return confirm('確定刪除提醒？');">
+                    <button class="btn btn-danger" type="submit">刪除</button>
+                </form>
+            </div>
         </div>
     {% endfor %}
 {% else %}
