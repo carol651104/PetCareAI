@@ -383,6 +383,10 @@ def login():
 
         user = User.query.filter_by(email=email).first()
 
+         if not user:
+            flash("尚無此帳號，請先註冊。")
+            return redirect(url_for("login"))
+             
         if not user or not check_password_hash(user.password_hash, password):
             flash("Email 或密碼錯誤。")
             return redirect(url_for("login"))
