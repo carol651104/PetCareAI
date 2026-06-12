@@ -230,7 +230,7 @@ def load_user(user_id):
 
 def calculate_risk_score(age, weight, symptom):
     score = 0
-    symptom = symptom.lower()
+    symptom = symptom.lower() if symptom else ""
 
     try:
         age = float(age)
@@ -245,7 +245,7 @@ def calculate_risk_score(age, weight, symptom):
     if age >= 10:
         score += 20
 
-    if weight <= 2:
+    if weight <= 2 and weight > 0:
         score += 15
 
     high_risk_keywords = ["吐血", "血尿", "抽搐", "昏倒", "呼吸困難", "不吃飯", "持續嘔吐"]
@@ -281,14 +281,21 @@ def calculate_risk_score(age, weight, symptom):
 
 
 # =========================
-# 首頁 / 功能頁
+# 首頁 / AI 助理頁
 # =========================
 
 @app.route("/")
 def home():
-    pets = []
-    if current_user.is_authenticated:
-        pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
+    if not current_user.is_authenticated:
+        return redirect(url_for("login"))
+
+    return redirect(url_for("dashboard"))
+
+
+@app.route("/ai-assistant")
+@login_required
+def ai_assistant():
+    pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
     return render_template("home.html", pets=pets)
 
 
@@ -307,9 +314,9 @@ def register():
         return redirect(url_for("dashboard"))
 
     if request.method == "POST":
-        username = request.form.get("username")
-        email = request.form.get("email")
-        password = request.form.get("password")
+        username = request.form.get("username", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
 
         if not username or not email or not password:
             flash("請完整填寫註冊資料。")
@@ -341,8 +348,8 @@ def login():
         return redirect(url_for("dashboard"))
 
     if request.method == "POST":
-        email = request.form.get("email")
-        password = request.form.get("password")
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
 
         user = User.query.filter_by(email=email).first()
 
@@ -360,7 +367,7 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for("home"))
+    return redirect(url_for("login"))
 
 
 # =========================
@@ -759,15 +766,16 @@ def delete_reminder(reminder_id):
 
 
 # =========================
-# AI 初步健康建議
+# AI 個人化健康助理
 # =========================
 
 @app.route("/ai", methods=["POST"])
+@login_required
 def ai():
     pet_id = request.form.get("pet_id")
 
     selected_pet = None
-    if current_user.is_authenticated and pet_id:
+    if pet_id:
         selected_pet = Pet.query.filter_by(id=pet_id, user_id=current_user.id).first()
 
     if selected_pet:
@@ -777,19 +785,59 @@ def ai():
         gender = selected_pet.gender or ""
         age = selected_pet.age or ""
         weight = str(selected_pet.weight or "")
-    else:
-        pet_name = request.form.get("pet_name")
-        species = request.form.get("species")
-        breed = request.form.get("breed")
-        gender = request.form.get("gender")
-        age = request.form.get("age")
-        weight = request.form.get("weight")
 
-    symptom = request.form.get("symptom")
+        recent_health_records = HealthRecord.query.filter_by(pet_id=selected_pet.id)\
+            .order_by(HealthRecord.record_date.desc())\
+            .limit(5)\
+            .all()
+
+        recent_medical_records = MedicalRecord.query.filter_by(pet_id=selected_pet.id)\
+            .order_by(MedicalRecord.visit_date.desc())\
+            .limit(3)\
+            .all()
+
+        pending_reminders = Reminder.query.filter_by(pet_id=selected_pet.id, is_done=False)\
+            .order_by(Reminder.reminder_date.asc())\
+            .limit(5)\
+            .all()
+    else:
+        pet_name = request.form.get("pet_name", "")
+        species = request.form.get("species", "")
+        breed = request.form.get("breed", "")
+        gender = request.form.get("gender", "")
+        age = request.form.get("age", "")
+        weight = request.form.get("weight", "")
+
+        recent_health_records = []
+        recent_medical_records = []
+        pending_reminders = []
+
+    symptom = request.form.get("symptom", "")
 
     risk_score, risk_level, risk_color, risk_advice = calculate_risk_score(
         age, weight, symptom
     )
+
+    health_history_text = "無近期健康紀錄"
+    if recent_health_records:
+        health_history_text = "\n".join([
+            f"{r.record_date}：體重 {r.weight or '未填寫'} kg，食慾 {r.appetite or '未填寫'}，活動量 {r.activity or '未填寫'}，症狀 {r.symptoms or '無'}，用藥 {r.medication or '無'}"
+            for r in recent_health_records
+        ])
+
+    medical_history_text = "無近期就醫紀錄"
+    if recent_medical_records:
+        medical_history_text = "\n".join([
+            f"{r.visit_date}：診所 {r.clinic_name or '未填寫'}，診斷 {r.diagnosis or '未填寫'}，藥物 {r.medicine or '無'}，醫囑 {r.doctor_advice or '無'}"
+            for r in recent_medical_records
+        ])
+
+    reminder_text = "無待完成提醒"
+    if pending_reminders:
+        reminder_text = "\n".join([
+            f"{r.reminder_date}：{r.reminder_type}，備註 {r.note or '無'}"
+            for r in pending_reminders
+        ])
 
     prompt = f"""
 你是一位寵物健康照護助理。
@@ -798,7 +846,7 @@ def ai():
 只能提供一般照護建議，不能取代獸醫診斷。
 請避免使用 Markdown 星號格式。
 
-寵物基本資料：
+以下是系統中已建立的寵物基本資料：
 名稱：{pet_name}
 物種：{species}
 品種：{breed}
@@ -806,7 +854,16 @@ def ai():
 年齡：{age} 歲
 體重：{weight} 公斤
 
-使用者描述的症狀：
+以下是近期健康紀錄：
+{health_history_text}
+
+以下是近期就醫紀錄：
+{medical_history_text}
+
+以下是目前待完成提醒：
+{reminder_text}
+
+使用者這次描述的問題或症狀：
 {symptom}
 
 系統初步風險評分：
@@ -814,11 +871,13 @@ def ai():
 風險等級：{risk_level}
 系統建議：{risk_advice}
 
+請根據寵物基本資料、歷史健康紀錄、就醫紀錄、提醒事項，以及這次使用者描述的問題，提供較個人化的初步照護建議。
+
 請依照以下格式回答：
 
 一、可能原因
-二、居家觀察重點
-三、照護建議
+二、需要觀察的重點
+三、居家照護建議
 四、什麼情況需要就醫
 五、提醒：本建議不能取代獸醫診斷
 """
@@ -845,23 +904,23 @@ def ai():
     except Exception as e:
         answer = f"AI 回覆產生失敗，請確認 Render 是否已設定 GROQ_API_KEY。錯誤訊息：{str(e)}"
 
-    if current_user.is_authenticated:
-        consultation = AIConsultation(
-            user_id=current_user.id,
-            pet_id=selected_pet.id if selected_pet else None,
-            pet_name=pet_name,
-            species=species,
-            breed=breed,
-            gender=gender,
-            age=age,
-            weight=weight,
-            symptom=symptom,
-            risk_score=risk_score,
-            risk_level=risk_level,
-            ai_answer=answer,
-        )
-        db.session.add(consultation)
-        db.session.commit()
+    consultation = AIConsultation(
+        user_id=current_user.id,
+        pet_id=selected_pet.id if selected_pet else None,
+        pet_name=pet_name,
+        species=species,
+        breed=breed,
+        gender=gender,
+        age=age,
+        weight=weight,
+        symptom=symptom,
+        risk_score=risk_score,
+        risk_level=risk_level,
+        ai_answer=answer,
+    )
+
+    db.session.add(consultation)
+    db.session.commit()
 
     pet_info = {
         "pet_name": pet_name,
@@ -873,9 +932,7 @@ def ai():
         "symptom": symptom,
     }
 
-    pets = []
-    if current_user.is_authenticated:
-        pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
+    pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
 
     return render_template(
         "home.html",
