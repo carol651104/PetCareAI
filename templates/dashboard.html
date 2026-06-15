@@ -1,123 +1,464 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - PetCareAI{% endblock %}
+{% block title %}PetCareAI Dashboard{% endblock %}
 
 {% block content %}
 
-<h1>PetCareAI Dashboard</h1>
-<p class="muted">歡迎，{{ current_user.username }}。這裡是你的寵物健康管理中心。</p>
+<div class="dashboard-page">
 
-<div class="grid-4">
-    <div class="card stat-card">
-        <h3>寵物資料</h3>
-        <p class="muted">管理寵物基本資料。</p>
+    <div class="dashboard-container">
 
-        <div class="stat-bottom">
-            <div class="stat-number">{{ pet_count }}</div>
-            <div class="stat-meta">目前建立的寵物數量</div>
-            <a class="btn" href="/pets">管理寵物</a>
+        <div class="dashboard-header">
+            <h1>PetCareAI Dashboard</h1>
+            <p>
+                歡迎，{{ current_user.name if current_user.name else current_user.email }}，這裡是你的寵物健康管理中心。
+            </p>
         </div>
-    </div>
 
-    <div class="card stat-card">
-        <h3>健康紀錄</h3>
-        <p class="muted">追蹤體重、食慾、活動量與症狀。</p>
+        <!-- 上排統計卡片：4 欄 -->
+        <div class="dashboard-top-grid">
 
-        <div class="stat-bottom">
-            <div class="stat-number">{{ total_health_records }}</div>
-            <div class="stat-meta">全部健康紀錄</div>
-            <a class="btn" href="/health-records">查看健康紀錄</a>
-        </div>
-    </div>
+            <div class="dashboard-stat-card">
+                <h5>寵物資料</h5>
+                <p>管理寵物基本資料。</p>
 
-    <div class="card stat-card">
-        <h3>就醫紀錄</h3>
-        <p class="muted">保存診斷、藥物與醫囑。</p>
+                <div class="stat-number">{{ pet_count }}</div>
+                <div class="stat-text">目前建立的寵物數量</div>
 
-        <div class="stat-bottom">
-            <div class="stat-number">{{ total_medical_records }}</div>
-            <div class="stat-meta">全部就醫紀錄</div>
-            <a class="btn" href="/medical-records">查看就醫紀錄</a>
-        </div>
-    </div>
-
-    <div class="card stat-card">
-        <h3>待完成提醒</h3>
-        <p class="muted">尚未完成的疫苗、驅蟲、健檢與回診提醒。</p>
-
-        <div class="stat-bottom">
-            <div class="stat-number">{{ total_reminders }}</div>
-            <div class="stat-meta">全部提醒：{{ total_all_reminders }} 筆</div>
-            <a class="btn" href="/reminders">查看提醒</a>
-        </div>
-    </div>
-</div>
-
-<div class="card">
-    <h2>我的寵物</h2>
-
-    {% if pets %}
-        {% for pet in pets %}
-            <div class="record">
-                {{ pet.name }}｜{{ pet.species }}
-
-                <div class="record-actions">
-                    <a class="btn" href="/pets/{{ pet.id }}">查看詳細資料</a>
-                    <a class="btn btn-green" href="/pets/{{ pet.id }}/health/add">新增健康紀錄</a>
-                    <a class="btn" href="/pets/{{ pet.id }}/medical/add">新增就醫紀錄</a>
-                    <a class="btn btn-brown" href="/pets/{{ pet.id }}/reminder/add">新增提醒</a>
-                    <a class="btn" href="/ai-assistant">AI 健康助理</a>
-                </div>
+                <a href="{{ url_for('pets') }}" class="btn-dashboard-blue">查看寵物</a>
             </div>
-        {% endfor %}
-    {% else %}
-        <p class="muted">目前尚未新增寵物資料。</p>
-    {% endif %}
 
-    <div class="card-actions">
-        <a class="btn btn-brown" href="/pets/add">新增寵物</a>
-    </div>
-</div>
+            <div class="dashboard-stat-card">
+                <h5>健康紀錄</h5>
+                <p>追蹤體重、食慾、活動與症狀。</p>
 
-<div class="grid-3">
-    <div class="card">
-        <h2>近期待完成提醒</h2>
-        {% if upcoming_reminders %}
-            {% for reminder in upcoming_reminders %}
-                <div class="record">
-                    {{ reminder.pet.name }}｜{{ reminder.reminder_type }}<br>
-                    日期：{{ reminder.reminder_date }}
-                </div>
-            {% endfor %}
-        {% else %}
-            <p class="muted">目前沒有待完成提醒。</p>
-        {% endif %}
-    </div>
+                <div class="stat-number">{{ health_record_count }}</div>
+                <div class="stat-text">全部健康紀錄</div>
 
-    <div class="card">
-        <h2>最新健康紀錄</h2>
-        {% if latest_health_records %}
-            {% for record in latest_health_records %}
-                <div class="record">
-                    {{ record.pet.name }}｜{{ record.record_date }}<br>
-                    體重：{{ record.weight or "未填寫" }} kg<br>
-                    食慾：{{ record.appetite or "未填寫" }}
-                </div>
-            {% endfor %}
-        {% else %}
-            <p class="muted">目前沒有健康紀錄。</p>
-        {% endif %}
-    </div>
+                <a href="{{ url_for('health_records') }}" class="btn-dashboard-blue">查看健康紀錄</a>
+            </div>
 
-    <div class="card">
-        <h2>AI 諮詢紀錄</h2>
-        <div class="stat-number">{{ total_ai_records }}</div>
-        <p class="muted">AI 會結合寵物資料、健康紀錄、就醫紀錄與提醒事項提供建議。</p>
+            <div class="dashboard-stat-card">
+                <h5>就醫紀錄</h5>
+                <p>保存診斷、藥物與回診資訊。</p>
 
-        <div class="card-actions">
-            <a class="btn" href="/ai-assistant">使用 AI 健康助理</a>
+                <div class="stat-number">{{ medical_record_count }}</div>
+                <div class="stat-text">全部就醫紀錄</div>
+
+                <a href="{{ url_for('medical_records') }}" class="btn-dashboard-blue">查看就醫紀錄</a>
+            </div>
+
+            <div class="dashboard-stat-card">
+                <h5>待完成提醒</h5>
+                <p>尚未完成的疫苗、驅蟲、健檢與回診提醒。</p>
+
+                <div class="stat-number">{{ pending_reminder_count }}</div>
+                <div class="stat-text">全部提醒：{{ pending_reminder_count }} 筆</div>
+
+                <a href="{{ url_for('reminders') }}" class="btn-dashboard-blue">查看提醒</a>
+            </div>
+
         </div>
+
+        <!-- 我的寵物區塊 -->
+        <div class="my-pet-card">
+
+            <h4>我的寵物</h4>
+
+            {% if pets %}
+                {% for pet in pets %}
+                    <div class="pet-item">
+                        <div class="pet-name">
+                            {{ pet.name }}
+                        </div>
+
+                        <div class="pet-actions">
+                            <a href="{{ url_for('pets') }}" class="btn-dashboard-blue">查看詳細資料</a>
+                            <a href="{{ url_for('health_records') }}" class="btn-dashboard-green">新增健康紀錄</a>
+                            <a href="{{ url_for('medical_records') }}" class="btn-dashboard-blue">新增就醫紀錄</a>
+                            <a href="{{ url_for('reminders') }}" class="btn-dashboard-orange">新增提醒</a>
+                            <a href="{{ url_for('ai_assistant') }}" class="btn-dashboard-blue">AI 健康助理</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-box">
+                    目前尚未建立寵物資料。
+                </div>
+            {% endif %}
+
+            <a href="{{ url_for('add_pet') }}" class="btn-dashboard-orange add-pet-btn">新增寵物</a>
+
+        </div>
+
+        <!-- 下排資訊卡片：4 欄 -->
+        <div class="dashboard-lower-grid">
+
+            <!-- 近期待完成提醒 -->
+            <div class="dashboard-info-card">
+                <h5>近期待完成提醒</h5>
+
+                {% if pending_reminders %}
+                    {% for reminder in pending_reminders %}
+                        <div class="info-box">
+                            <div class="info-main">
+                                {{ reminder.pet.name if reminder.pet else '未指定寵物' }}
+                            </div>
+                            <div class="info-sub">
+                                日期：{{ reminder.reminder_date }}
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="info-box">
+                        <div class="info-sub">目前沒有待完成提醒。</div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- 最新健康紀錄 -->
+            <div class="dashboard-info-card">
+                <h5>最新健康紀錄</h5>
+
+                {% if latest_health_record %}
+                    <div class="info-box">
+                        <div class="info-main">
+                            {{ latest_health_record.pet.name if latest_health_record.pet else '未指定寵物' }}
+                            ｜{{ latest_health_record.record_date if latest_health_record.record_date else '' }}
+                        </div>
+
+                        {% if latest_health_record.weight %}
+                            <div class="info-sub">體重：{{ latest_health_record.weight }} kg</div>
+                        {% endif %}
+
+                        {% if latest_health_record.appetite %}
+                            <div class="info-sub">食慾：{{ latest_health_record.appetite }}</div>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="info-box">
+                        <div class="info-sub">目前尚無健康紀錄。</div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- 新增：健康趨勢圖表 -->
+            <div class="dashboard-info-card">
+                <h5>健康趨勢圖表</h5>
+
+                <div class="info-box trend-info-box">
+                    <div class="mini-chart">
+                        <span style="height: 35%;"></span>
+                        <span style="height: 55%;"></span>
+                        <span style="height: 45%;"></span>
+                        <span style="height: 70%;"></span>
+                        <span style="height: 60%;"></span>
+                    </div>
+
+                    <div class="info-sub">
+                        以圖表查看體重、健康狀態與照護紀錄變化。
+                    </div>
+                </div>
+
+                <a href="{{ url_for('health_trends') }}" class="btn-dashboard-blue info-card-btn">
+                    查看趨勢圖表
+                </a>
+            </div>
+
+            <!-- AI 諮詢紀錄 -->
+            <div class="dashboard-info-card">
+                <h5>AI 諮詢紀錄</h5>
+
+                <div class="ai-number">
+                    {{ ai_consult_count }}
+                </div>
+
+                <p class="ai-desc">
+                    AI 會參考寵物資料、健康紀錄、就醫紀錄與提醒事項提供建議。
+                </p>
+
+                <a href="{{ url_for('ai_assistant') }}" class="btn-dashboard-blue info-card-btn">
+                    使用 AI 健康助理
+                </a>
+            </div>
+
+        </div>
+
     </div>
+
 </div>
+
+<style>
+    .dashboard-page {
+        background: #f6f4f1;
+        min-height: 100vh;
+        padding: 34px 0 50px;
+    }
+
+    .dashboard-container {
+        width: min(1120px, 92%);
+        margin: 0 auto;
+    }
+
+    .dashboard-header h1 {
+        color: #b66b36;
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 16px;
+    }
+
+    .dashboard-header p {
+        color: #6f6f6f;
+        font-size: 0.95rem;
+        margin-bottom: 24px;
+    }
+
+    .dashboard-top-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 22px;
+        margin-bottom: 22px;
+    }
+
+    .dashboard-stat-card {
+        background: #ffffff;
+        border-radius: 18px;
+        padding: 28px 24px;
+        min-height: 260px;
+        box-shadow: 0 8px 26px rgba(0, 0, 0, 0.04);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .dashboard-stat-card h5 {
+        color: #b66b36;
+        font-size: 1rem;
+        font-weight: 700;
+        margin-bottom: 22px;
+    }
+
+    .dashboard-stat-card p {
+        color: #626262;
+        font-size: 0.9rem;
+        line-height: 1.8;
+        min-height: 58px;
+        margin-bottom: 22px;
+    }
+
+    .stat-number {
+        color: #bd7339;
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 10px;
+    }
+
+    .stat-text {
+        color: #777777;
+        font-size: 0.82rem;
+        margin-bottom: 18px;
+    }
+
+    .btn-dashboard-blue,
+    .btn-dashboard-green,
+    .btn-dashboard-orange {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        width: fit-content;
+        border-radius: 999px;
+        padding: 8px 16px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #ffffff;
+        text-decoration: none;
+        border: none;
+        white-space: nowrap;
+    }
+
+    .btn-dashboard-blue {
+        background: #8faeee;
+    }
+
+    .btn-dashboard-blue:hover {
+        background: #789be0;
+        color: #ffffff;
+    }
+
+    .btn-dashboard-green {
+        background: #7abf8a;
+    }
+
+    .btn-dashboard-green:hover {
+        background: #68ac78;
+        color: #ffffff;
+    }
+
+    .btn-dashboard-orange {
+        background: #c67635;
+    }
+
+    .btn-dashboard-orange:hover {
+        background: #ac6329;
+        color: #ffffff;
+    }
+
+    .my-pet-card {
+        background: #ffffff;
+        border-radius: 18px;
+        padding: 28px;
+        margin-bottom: 22px;
+        box-shadow: 0 8px 26px rgba(0, 0, 0, 0.04);
+    }
+
+    .my-pet-card h4 {
+        color: #b66b36;
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+    }
+
+    .pet-item {
+        background: #f5f7ff;
+        border-radius: 14px;
+        padding: 18px;
+        margin-bottom: 16px;
+    }
+
+    .pet-name {
+        color: #444444;
+        font-weight: 700;
+        margin-bottom: 14px;
+    }
+
+    .pet-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .add-pet-btn {
+        margin-top: 4px;
+    }
+
+    .empty-box {
+        background: #f5f7ff;
+        border-radius: 14px;
+        padding: 18px;
+        color: #777777;
+        font-size: 0.9rem;
+        margin-bottom: 16px;
+    }
+
+    .dashboard-lower-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 22px;
+        align-items: stretch;
+    }
+
+    .dashboard-info-card {
+        background: #ffffff;
+        border-radius: 18px;
+        padding: 28px 22px;
+        min-height: 245px;
+        box-shadow: 0 8px 26px rgba(0, 0, 0, 0.04);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .dashboard-info-card h5 {
+        color: #b66b36;
+        font-size: 1rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+    }
+
+    .info-box {
+        background: #f5f7ff;
+        border-radius: 14px;
+        padding: 16px;
+        margin-bottom: 12px;
+    }
+
+    .info-main {
+        color: #444444;
+        font-size: 0.9rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .info-sub {
+        color: #666666;
+        font-size: 0.82rem;
+        line-height: 1.7;
+    }
+
+    .trend-info-box {
+        padding-bottom: 14px;
+    }
+
+    .mini-chart {
+        height: 72px;
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .mini-chart span {
+        flex: 1;
+        max-width: 18px;
+        border-radius: 999px 999px 4px 4px;
+        background: linear-gradient(180deg, #f7a9c8, #91aef0);
+    }
+
+    .ai-number {
+        color: #bd7339;
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 18px;
+    }
+
+    .ai-desc {
+        color: #666666;
+        font-size: 0.84rem;
+        line-height: 1.8;
+        margin-bottom: 18px;
+    }
+
+    .info-card-btn {
+        margin-top: auto;
+    }
+
+    @media (max-width: 992px) {
+        .dashboard-top-grid,
+        .dashboard-lower-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .dashboard-stat-card {
+            min-height: 230px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .dashboard-top-grid,
+        .dashboard-lower-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .dashboard-stat-card,
+        .dashboard-info-card {
+            min-height: auto;
+        }
+
+        .pet-actions {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+</style>
 
 {% endblock %}
