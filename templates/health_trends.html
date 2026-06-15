@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}健康趨勢圖表｜PetCareAI{% endblock %}
+
+{% block content %}
+
+<div class="trend-page">
+
+    <div class="trend-container">
+
+        <div class="trend-header">
+            <h1>健康趨勢圖表</h1>
+            <p>
+                透過圖表化方式查看寵物的體重、健康狀態與照護紀錄變化。
+            </p>
+        </div>
+
+        <div class="trend-grid">
+
+            <!-- 體重趨勢 -->
+            <div class="trend-card">
+                <h5>體重趨勢</h5>
+                <p>顯示健康紀錄中的體重變化，方便觀察寵物是否有明顯增減。</p>
+
+                <div class="chart-preview">
+                    <div class="bar-chart">
+                        <span style="height: 42%;"></span>
+                        <span style="height: 56%;"></span>
+                        <span style="height: 50%;"></span>
+                        <span style="height: 68%;"></span>
+                        <span style="height: 61%;"></span>
+                        <span style="height: 75%;"></span>
+                    </div>
+                    <div class="chart-label">體重資料將依健康紀錄產生</div>
+                </div>
+            </div>
+
+            <!-- 健康紀錄數量 -->
+            <div class="trend-card">
+                <h5>健康紀錄數量</h5>
+                <p>統計目前已建立的健康紀錄筆數，協助了解照護紀錄是否完整。</p>
+
+                <div class="number-preview">
+                    <div class="big-number">{{ health_records|length }}</div>
+                    <div class="chart-label">目前健康紀錄總數</div>
+                </div>
+            </div>
+
+            <!-- 健康狀態分析 -->
+            <div class="trend-card">
+                <h5>健康狀態分析</h5>
+                <p>未來可依照食慾、精神、排便、活動力等欄位做狀態統計。</p>
+
+                <div class="circle-preview">
+                    <div class="circle-chart">
+                        <span>Health</span>
+                    </div>
+                    <div class="chart-label">可擴充為健康狀態比例圖</div>
+                </div>
+            </div>
+
+            <!-- 照護紀錄變化 -->
+            <div class="trend-card">
+                <h5>照護紀錄變化</h5>
+                <p>未來可整合就醫、提醒、疫苗、驅蟲與用藥紀錄。</p>
+
+                <div class="line-preview">
+                    <svg viewBox="0 0 240 110" preserveAspectRatio="none">
+                        <polyline
+                            points="10,85 50,65 90,72 130,45 170,52 220,25"
+                            fill="none"
+                            stroke="#8faeee"
+                            stroke-width="6"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+                        <circle cx="10" cy="85" r="6" fill="#f7a9c8"></circle>
+                        <circle cx="50" cy="65" r="6" fill="#f7a9c8"></circle>
+                        <circle cx="90" cy="72" r="6" fill="#f7a9c8"></circle>
+                        <circle cx="130" cy="45" r="6" fill="#f7a9c8"></circle>
+                        <circle cx="170" cy="52" r="6" fill="#f7a9c8"></circle>
+                        <circle cx="220" cy="25" r="6" fill="#f7a9c8"></circle>
+                    </svg>
+                    <div class="chart-label">可擴充為照護時間軸</div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="back-area">
+            <a href="{{ url_for('dashboard') }}" class="btn-back">
+                返回 Dashboard
+            </a>
+        </div>
+
+    </div>
+
+</div>
+
+<style>
+    .trend-page {
+        background: #f6f4f1;
+        min-height: 100vh;
+        padding: 34px 0 50px;
+    }
+
+    .trend-container {
+        width: min(1120px, 92%);
+        margin: 0 auto;
+    }
+
+    .trend-header h1 {
+        color: #b66b36;
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 14px;
+    }
+
+    .trend-header p {
+        color: #666666;
+        font-size: 0.95rem;
+        margin-bottom: 26px;
+    }
+
+    .trend-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 22px;
+    }
+
+    .trend-card {
+        background: #ffffff;
+        border-radius: 18px;
+        padding: 28px;
+        min-height: 330px;
+        box-shadow: 0 8px 26px rgba(0, 0, 0, 0.04);
+    }
+
+    .trend-card h5 {
+        color: #b66b36;
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin-bottom: 14px;
+    }
+
+    .trend-card p {
+        color: #666666;
+        font-size: 0.9rem;
+        line-height: 1.8;
+        margin-bottom: 22px;
+    }
+
+    .chart-preview,
+    .number-preview,
+    .circle-preview,
+    .line-preview {
+        background: #f5f7ff;
+        border-radius: 16px;
+        min-height: 180px;
+        padding: 22px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        border: 1px solid #edf0fb;
+    }
+
+    .bar-chart {
+        height: 110px;
+        display: flex;
+        align-items: flex-end;
+        gap: 14px;
+        margin-bottom: 18px;
+    }
+
+    .bar-chart span {
+        width: 24px;
+        border-radius: 999px 999px 5px 5px;
+        background: linear-gradient(180deg, #f7a9c8, #91aef0);
+    }
+
+    .big-number {
+        color: #bd7339;
+        font-size: 3rem;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 18px;
+    }
+
+    .circle-chart {
+        width: 130px;
+        height: 130px;
+        border-radius: 50%;
+        background: conic-gradient(
+            #f7a9c8 0deg 135deg,
+            #91aef0 135deg 260deg,
+            #ffd27d 260deg 360deg
+        );
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 18px;
+    }
+
+    .circle-chart span {
+        width: 82px;
+        height: 82px;
+        border-radius: 50%;
+        background: #ffffff;
+        color: #b66b36;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: 700;
+        font-size: 0.88rem;
+    }
+
+    .line-preview svg {
+        width: 100%;
+        height: 120px;
+        margin-bottom: 18px;
+    }
+
+    .chart-label {
+        color: #777777;
+        font-size: 0.84rem;
+        text-align: center;
+    }
+
+    .back-area {
+        margin-top: 28px;
+    }
+
+    .btn-back {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        background: #8faeee;
+        color: #ffffff;
+        border-radius: 999px;
+        padding: 10px 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .btn-back:hover {
+        background: #789be0;
+        color: #ffffff;
+    }
+
+    @media (max-width: 768px) {
+        .trend-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .trend-card {
+            min-height: auto;
+        }
+    }
+</style>
+
+{% endblock %}
