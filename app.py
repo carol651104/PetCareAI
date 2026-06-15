@@ -386,8 +386,8 @@ def login():
         if not user:
             flash("尚無此帳號，請先註冊。")
             return redirect(url_for("login"))
-             
-        if not user or not check_password_hash(user.password_hash, password):
+
+        if not check_password_hash(user.password_hash, password):
             flash("Email 或密碼錯誤。")
             return redirect(url_for("login"))
 
@@ -405,7 +405,7 @@ def logout():
 
 
 # =========================
-# Dashboard
+# Dashboard / 健康趨勢圖表
 # =========================
 
 @app.route("/dashboard")
@@ -414,50 +414,135 @@ def dashboard():
     pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
     pet_ids = [pet.id for pet in pets]
 
-    total_health_records = HealthRecord.query.filter(
-        HealthRecord.pet_id.in_(pet_ids)
-    ).count() if pet_ids else 0
-
-    total_medical_records = MedicalRecord.query.filter(
-        MedicalRecord.pet_id.in_(pet_ids)
-    ).count() if pet_ids else 0
-
-    total_all_reminders = Reminder.query.filter(
-        Reminder.pet_id.in_(pet_ids)
-    ).count() if pet_ids else 0
-
-    total_pending_reminders = Reminder.query.filter(
-        Reminder.pet_id.in_(pet_ids),
-        Reminder.is_done == False
-    ).count() if pet_ids else 0
-
-    total_ai_records = AIConsultation.query.filter_by(user_id=current_user.id).count()
-
-    upcoming_reminders = []
     if pet_ids:
+        total_health_records = HealthRecord.query.filter(
+            HealthRecord.pet_id.in_(pet_ids)
+        ).count()
+
+        total_medical_records = MedicalRecord.query.filter(
+            MedicalRecord.pet_id.in_(pet_ids)
+        ).count()
+
+        total_all_reminders = Reminder.query.filter(
+            Reminder.pet_id.in_(pet_ids)
+        ).count()
+
+        total_pending_reminders = Reminder.query.filter(
+            Reminder.pet_id.in_(pet_ids),
+            Reminder.is_done == False
+        ).count()
+
         upcoming_reminders = Reminder.query.filter(
             Reminder.pet_id.in_(pet_ids),
             Reminder.is_done == False
         ).order_by(Reminder.reminder_date.asc()).limit(5).all()
 
-    latest_health_records = []
-    if pet_ids:
         latest_health_records = HealthRecord.query.filter(
             HealthRecord.pet_id.in_(pet_ids)
         ).order_by(HealthRecord.record_date.desc()).limit(5).all()
 
+        latest_health_record = HealthRecord.query.filter(
+            HealthRecord.pet_id.in_(pet_ids)
+        ).order_by(HealthRecord.record_date.desc(), HealthRecord.id.desc()).first()
+
+    else:
+        total_health_records = 0
+        total_medical_records = 0
+        total_all_reminders = 0
+        total_pending_reminders = 0
+        upcoming_reminders = []
+        latest_health_records = []
+        latest_health_record = None
+
+    total_ai_records = AIConsultation.query.filter_by(user_id=current_user.id).count()
+
     return render_template(
         "dashboard.html",
         pets=pets,
+
+        # 上排統計卡片使用
         pet_count=len(pets),
+        health_record_count=total_health_records,
+        medical_record_count=total_medical_records,
+        pending_reminder_count=total_pending_reminders,
+
+        # 如果你的舊 dashboard.html 還有用這些變數，也可以正常顯示
         total_health_records=total_health_records,
         total_medical_records=total_medical_records,
         total_reminders=total_pending_reminders,
         total_all_reminders=total_all_reminders,
         total_ai_records=total_ai_records,
+
+        # 下排四張卡片使用
+        pending_reminders=upcoming_reminders,
         upcoming_reminders=upcoming_reminders,
+        latest_health_record=latest_health_record,
         latest_health_records=latest_health_records,
+        ai_consult_count=total_ai_records,
     )
+
+
+@app.route("/health-trends")
+@login_required
+def health_trends():
+    pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
+    pet_ids = [pet.id for pet in pets]
+
+    health_records = []
+    weight_trend_data = []
+    appetite_stats = {
+        "正常": 0,
+        "偏少": 0,
+        "偏多": 0,
+        "未填寫": 0,
+    }
+    activity_stats = {
+        "正常": 0,
+        "偏低": 0,
+        "活躍": 0,
+        "未填寫": 0,
+    }
+
+    if pet_ids:
+        health_records = HealthRecord.query.filter(
+            HealthRecord.pet_id.in_(pet_ids)
+        ).order_by(HealthRecord.record_date.asc(), HealthRecord.id.asc()).all()
+
+        for record in health_records:
+            if record.weight is not None:
+                weight_trend_data.append({
+                    "date": record.record_date.strftime("%Y-%m-%d") if record.record_date else "",
+                    "pet_name": record.pet.name if record.pet else "未指定寵物",
+                    "weight": record.weight,
+                })
+
+            appetite = record.appetite.strip() if record.appetite else "未填寫"
+            if appetite in appetite_stats:
+                appetite_stats[appetite] += 1
+            else:
+                appetite_stats["未填寫"] += 1
+
+            activity = record.activity.strip() if record.activity else "未填寫"
+            if activity in activity_stats:
+                activity_stats[activity] += 1
+            else:
+                activity_stats["未填寫"] += 1
+
+    return render_template(
+        "health_trends.html",
+        pets=pets,
+        health_records=health_records,
+        weight_trend_data=weight_trend_data,
+        appetite_stats=appetite_stats,
+        activity_stats=activity_stats,
+    )
+
+
+# 同時保留底線版本，避免模板裡如果寫 url_for("health_trends") 或連到 /health_trends 發生錯誤
+@app.route("/health_trends")
+@login_required
+def health_trends_alias():
+    return redirect(url_for("health_trends"))
 
 
 # =========================
