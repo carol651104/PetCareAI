@@ -466,7 +466,7 @@ def dashboard():
         medical_record_count=total_medical_records,
         pending_reminder_count=total_pending_reminders,
 
-        # 如果你的舊 dashboard.html 還有用這些變數，也可以正常顯示
+        # 舊版 dashboard.html 可能會用到的變數
         total_health_records=total_health_records,
         total_medical_records=total_medical_records,
         total_reminders=total_pending_reminders,
@@ -489,56 +489,152 @@ def health_trends():
     pet_ids = [pet.id for pet in pets]
 
     health_records = []
+    medical_records = []
+    reminders = []
+
     weight_trend_data = []
-    appetite_stats = {
-        "正常": 0,
-        "偏少": 0,
-        "偏多": 0,
-        "未填寫": 0,
-    }
-    activity_stats = {
-        "正常": 0,
-        "偏低": 0,
-        "活躍": 0,
-        "未填寫": 0,
-    }
+    appetite_stats = {}
+    activity_stats = {}
+    care_trend_map = {}
+
+    total_health_records = 0
+    total_medical_records = 0
+    total_reminders = 0
+    total_care_records = 0
 
     if pet_ids:
         health_records = HealthRecord.query.filter(
             HealthRecord.pet_id.in_(pet_ids)
         ).order_by(HealthRecord.record_date.asc(), HealthRecord.id.asc()).all()
 
+        medical_records = MedicalRecord.query.filter(
+            MedicalRecord.pet_id.in_(pet_ids)
+        ).order_by(MedicalRecord.visit_date.asc(), MedicalRecord.id.asc()).all()
+
+        reminders = Reminder.query.filter(
+            Reminder.pet_id.in_(pet_ids)
+        ).order_by(Reminder.reminder_date.asc(), Reminder.id.asc()).all()
+
+        total_health_records = len(health_records)
+        total_medical_records = len(medical_records)
+        total_reminders = len(reminders)
+        total_care_records = total_health_records + total_medical_records + total_reminders
+
+        # 1. 體重趨勢資料
         for record in health_records:
             if record.weight is not None:
                 weight_trend_data.append({
                     "date": record.record_date.strftime("%Y-%m-%d") if record.record_date else "",
                     "pet_name": record.pet.name if record.pet else "未指定寵物",
-                    "weight": record.weight,
+                    "weight": float(record.weight),
                 })
 
+        # 2. 健康狀態分析：食慾統計
+        for record in health_records:
             appetite = record.appetite.strip() if record.appetite else "未填寫"
-            if appetite in appetite_stats:
-                appetite_stats[appetite] += 1
-            else:
-                appetite_stats["未填寫"] += 1
 
+            if appetite == "":
+                appetite = "未填寫"
+
+            appetite_stats[appetite] = appetite_stats.get(appetite, 0) + 1
+
+        # 3. 健康狀態分析：活動力統計
+        for record in health_records:
             activity = record.activity.strip() if record.activity else "未填寫"
-            if activity in activity_stats:
-                activity_stats[activity] += 1
-            else:
-                activity_stats["未填寫"] += 1
+
+            if activity == "":
+                activity = "未填寫"
+
+            activity_stats[activity] = activity_stats.get(activity, 0) + 1
+
+        # 4. 照護紀錄變化：健康紀錄 + 就醫紀錄 + 提醒事項，依月份統計
+        for record in health_records:
+            if record.record_date:
+                month_key = record.record_date.strftime("%Y-%m")
+
+                if month_key not in care_trend_map:
+                    care_trend_map[month_key] = {
+                        "month": month_key,
+                        "health": 0,
+                        "medical": 0,
+                        "reminder": 0,
+                        "total": 0,
+                    }
+
+                care_trend_map[month_key]["health"] += 1
+                care_trend_map[month_key]["total"] += 1
+
+        for record in medical_records:
+            if record.visit_date:
+                month_key = record.visit_date.strftime("%Y-%m")
+
+                if month_key not in care_trend_map:
+                    care_trend_map[month_key] = {
+                        "month": month_key,
+                        "health": 0,
+                        "medical": 0,
+                        "reminder": 0,
+                        "total": 0,
+                    }
+
+                care_trend_map[month_key]["medical"] += 1
+                care_trend_map[month_key]["total"] += 1
+
+        for reminder in reminders:
+            if reminder.reminder_date:
+                month_key = reminder.reminder_date.strftime("%Y-%m")
+
+                if month_key not in care_trend_map:
+                    care_trend_map[month_key] = {
+                        "month": month_key,
+                        "health": 0,
+                        "medical": 0,
+                        "reminder": 0,
+                        "total": 0,
+                    }
+
+                care_trend_map[month_key]["reminder"] += 1
+                care_trend_map[month_key]["total"] += 1
+
+    appetite_chart_data = [
+        {
+            "label": key,
+            "value": value
+        }
+        for key, value in appetite_stats.items()
+    ]
+
+    activity_chart_data = [
+        {
+            "label": key,
+            "value": value
+        }
+        for key, value in activity_stats.items()
+    ]
+
+    care_trend_data = [
+        care_trend_map[key]
+        for key in sorted(care_trend_map.keys())
+    ]
 
     return render_template(
         "health_trends.html",
         pets=pets,
         health_records=health_records,
+        medical_records=medical_records,
+        reminders=reminders,
         weight_trend_data=weight_trend_data,
-        appetite_stats=appetite_stats,
-        activity_stats=activity_stats,
+        appetite_chart_data=appetite_chart_data,
+        activity_chart_data=activity_chart_data,
+        care_trend_data=care_trend_data,
+        total_health_records=total_health_records,
+        total_medical_records=total_medical_records,
+        total_reminders=total_reminders,
+        total_care_records=total_care_records,
     )
 
 
-# 同時保留底線版本，避免模板裡如果寫 url_for("health_trends") 或連到 /health_trends 發生錯誤
+# 保留底線網址，避免 /health_trends 舊連結失效
 @app.route("/health_trends")
 @login_required
 def health_trends_alias():
