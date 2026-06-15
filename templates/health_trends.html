@@ -15,6 +15,7 @@
             </p>
         </div>
 
+        <!-- 上方統計摘要 -->
         <div class="trend-summary-grid">
 
             <div class="summary-card">
@@ -39,6 +40,7 @@
 
         </div>
 
+        <!-- 圖表區 -->
         <div class="trend-grid">
 
             <!-- 1. 體重趨勢 -->
@@ -107,17 +109,17 @@
                 </div>
             </div>
 
-            <!-- 4. 照護紀錄變化 -->
+            <!-- 4. 每月照護紀錄統計 -->
             <div class="trend-card">
-                <h5>照護紀錄變化</h5>
-                <p>整合健康紀錄、就醫紀錄與提醒事項，顯示每月照護紀錄變化。</p>
+                <h5>每月照護紀錄統計</h5>
+                <p>以月份統計健康紀錄、就醫紀錄與提醒事項，方便查看每月照護次數。</p>
 
                 <div class="chart-box">
                     {% if care_trend_data %}
                         <canvas id="careTrendChart"></canvas>
                     {% else %}
                         <div class="empty-chart">
-                            尚無照護紀錄資料，新增健康、就醫或提醒紀錄後即可顯示趨勢。
+                            尚無照護紀錄資料，新增健康紀錄、就醫紀錄或提醒事項後即可顯示統計圖。
                         </div>
                     {% endif %}
                 </div>
@@ -289,6 +291,13 @@
                                 family: "'Noto Sans TC', sans-serif"
                             }
                         }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}：${context.raw} 筆`;
+                            }
+                        }
                     }
                 }
             }
@@ -324,6 +333,13 @@
                 plugins: {
                     legend: {
                         display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}：${context.raw} 筆`;
+                            }
+                        }
                     }
                 },
                 scales: {
@@ -339,7 +355,10 @@
                         beginAtZero: true,
                         ticks: {
                             color: "#666666",
-                            precision: 0
+                            precision: 0,
+                            callback: function(value) {
+                                return value + " 筆";
+                            }
                         },
                         grid: {
                             color: "rgba(180, 185, 210, 0.25)"
@@ -361,52 +380,29 @@
         const healthValues = careTrendData.map(item => item.health);
         const medicalValues = careTrendData.map(item => item.medical);
         const reminderValues = careTrendData.map(item => item.reminder);
-        const totalValues = careTrendData.map(item => item.total);
 
         new Chart(canvas, {
-            type: "line",
+            type: "bar",
             data: {
                 labels: labels,
                 datasets: [
                     {
-                        label: "總照護紀錄",
-                        data: totalValues,
-                        borderColor: chartColors.brown,
-                        backgroundColor: "rgba(182, 107, 54, 0.12)",
-                        pointBackgroundColor: chartColors.brown,
-                        borderWidth: 3,
-                        tension: 0.35,
-                        fill: true
-                    },
-                    {
                         label: "健康紀錄",
                         data: healthValues,
-                        borderColor: chartColors.blue,
-                        backgroundColor: "rgba(143, 174, 238, 0.1)",
-                        pointBackgroundColor: chartColors.blue,
-                        borderWidth: 2,
-                        tension: 0.35,
-                        fill: false
+                        backgroundColor: chartColors.blue,
+                        borderRadius: 10
                     },
                     {
                         label: "就醫紀錄",
                         data: medicalValues,
-                        borderColor: chartColors.pink,
-                        backgroundColor: "rgba(247, 169, 200, 0.1)",
-                        pointBackgroundColor: chartColors.pink,
-                        borderWidth: 2,
-                        tension: 0.35,
-                        fill: false
+                        backgroundColor: chartColors.pink,
+                        borderRadius: 10
                     },
                     {
                         label: "提醒事項",
                         data: reminderValues,
-                        borderColor: chartColors.orange,
-                        backgroundColor: "rgba(255, 210, 125, 0.1)",
-                        pointBackgroundColor: chartColors.orange,
-                        borderWidth: 2,
-                        tension: 0.35,
-                        fill: false
+                        backgroundColor: chartColors.orange,
+                        borderRadius: 10
                     }
                 ]
             },
@@ -422,10 +418,27 @@
                                 family: "'Noto Sans TC', sans-serif"
                             }
                         }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}：${context.raw} 筆`;
+                            },
+                            footer: function(context) {
+                                let total = 0;
+
+                                context.forEach(item => {
+                                    total += item.raw;
+                                });
+
+                                return "本月總照護紀錄：" + total + " 筆";
+                            }
+                        }
                     }
                 },
                 scales: {
                     x: {
+                        stacked: false,
                         ticks: {
                             color: "#666666"
                         },
@@ -437,7 +450,10 @@
                         beginAtZero: true,
                         ticks: {
                             color: "#666666",
-                            precision: 0
+                            precision: 0,
+                            callback: function(value) {
+                                return value + " 筆";
+                            }
                         },
                         grid: {
                             color: "rgba(180, 185, 210, 0.25)"
