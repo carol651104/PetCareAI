@@ -5,64 +5,68 @@
 {% block content %}
 
 <h1>PetCareAI 主要功能</h1>
-<p class="muted">以寵物健康管理為核心，整合資料紀錄、健康提醒、AI 建議、趨勢分析與報告匯出功能。</p>
+<p class="muted">
+    以寵物健康管理為核心，整合資料紀錄、健康提醒、AI 建議、趨勢分析與報告匯出功能。
+</p>
 
 <div class="grid-4">
+
     <div class="card">
         <div class="feature-icon">👤</div>
         <h3>會員登入與帳號管理</h3>
         <p class="muted">建立帳號並管理自己的寵物健康資料。</p>
-        <a class="btn" href="/login">登入</a>
+        <a class="btn" href="{{ url_for('login') }}">登入</a>
     </div>
 
     <div class="card">
         <div class="feature-icon">🐾</div>
         <h3>寵物資料管理</h3>
         <p class="muted">新增、查看、修改與刪除寵物基本資料。</p>
-        <a class="btn" href="/pets">查看功能</a>
+        <a class="btn" href="{{ url_for('pets') }}">查看功能</a>
     </div>
 
     <div class="card">
         <div class="feature-icon">📋</div>
         <h3>健康紀錄管理</h3>
         <p class="muted">紀錄體重、食慾、活動量、症狀與用藥情況。</p>
-        <a class="btn" href="/health-records">查看功能</a>
+        <a class="btn" href="{{ url_for('health_records') }}">查看功能</a>
     </div>
 
     <div class="card">
         <div class="feature-icon">📅</div>
         <h3>疫苗與驅蟲提醒</h3>
         <p class="muted">建立疫苗、驅蟲、健檢、回診與用藥提醒。</p>
-        <a class="btn" href="/reminders">查看功能</a>
+        <a class="btn" href="{{ url_for('reminders') }}">查看功能</a>
     </div>
 
     <div class="card">
         <div class="feature-icon">🏥</div>
         <h3>就醫紀錄管理</h3>
         <p class="muted">保存診所、診斷結果、藥物與獸醫醫囑。</p>
-        <a class="btn" href="/medical-records">查看功能</a>
+        <a class="btn" href="{{ url_for('medical_records') }}">查看功能</a>
     </div>
 
     <div class="card">
         <div class="feature-icon">🤖</div>
         <h3>AI 個人化健康助理</h3>
         <p class="muted">結合寵物資料、健康紀錄、就醫紀錄與提醒事項提供建議。</p>
-        <a class="btn" href="/ai-assistant">開始使用</a>
+        <a class="btn" href="{{ url_for('ai_assistant') }}">開始使用</a>
     </div>
 
     <div class="card">
         <div class="feature-icon">📊</div>
         <h3>健康趨勢圖表</h3>
         <p class="muted">以圖表查看體重、健康狀態與照護紀錄變化。</p>
-        <a href="{{ url_for('health_trends') }}" class="feature-btn">查看圖表</a>
+        <a class="btn" href="{{ url_for('health_trends') }}">查看圖表</a>
     </div>
 
     <div class="card">
         <div class="feature-icon">📄</div>
         <h3>健康報告匯出</h3>
         <p class="muted">整合寵物資料、健康紀錄、就醫紀錄與 AI 建議。</p>
-        <a class="btn" href="/report">查看報告</a>
+        <a class="btn" href="{{ url_for('report') }}">查看報告</a>
     </div>
+
 </div>
 
 {% endblock %}
