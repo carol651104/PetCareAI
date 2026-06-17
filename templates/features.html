@@ -21,7 +21,7 @@
     <div class="card">
         <div class="feature-icon">🐾</div>
         <h3>寵物資料管理</h3>
-        <p class="muted">新增、查看、修改與刪除寵物基本資料。</p>
+        <p class="muted">免費版最多 1 隻寵物，Premium 可管理多隻寵物。</p>
         <a class="btn" href="{{ url_for('pets') }}">查看功能</a>
     </div>
 
@@ -49,24 +49,45 @@
     <div class="card">
         <div class="feature-icon">🤖</div>
         <h3>AI 個人化健康助理</h3>
-        <p class="muted">結合寵物資料、健康紀錄、就醫紀錄與提醒事項提供建議。</p>
+        <p class="muted">免費版 3 次 AI 諮詢，Premium 可不限次數使用。</p>
         <a class="btn" href="{{ url_for('ai_assistant') }}">開始使用</a>
     </div>
 
-    <div class="card">
+    <div class="card premium-feature">
         <div class="feature-icon">📊</div>
         <h3>健康趨勢圖表</h3>
         <p class="muted">以圖表查看體重、健康狀態與照護紀錄變化。</p>
         <a class="btn" href="{{ url_for('health_trends') }}">查看圖表</a>
+        <div class="premium-tag">Premium</div>
     </div>
 
-    <div class="card">
+    <div class="card premium-feature">
         <div class="feature-icon">📄</div>
         <h3>健康報告匯出</h3>
         <p class="muted">整合寵物資料、健康紀錄、就醫紀錄與 AI 建議。</p>
         <a class="btn" href="{{ url_for('report') }}">查看報告</a>
+        <div class="premium-tag">Premium</div>
     </div>
 
 </div>
+
+<style>
+    .premium-feature {
+        position: relative;
+        border: 1px solid #f2c2d4;
+    }
+
+    .premium-tag {
+        position: absolute;
+        top: 18px;
+        right: 18px;
+        background: #fff0f6;
+        color: #d85c8a;
+        border-radius: 999px;
+        padding: 5px 10px;
+        font-size: 0.72rem;
+        font-weight: 700;
+    }
+</style>
 
 {% endblock %}
