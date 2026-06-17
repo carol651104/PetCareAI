@@ -12,6 +12,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from groq import Groq
 from datetime import datetime
+from sqlalchemy import text, inspect
 import os
 import uuid
 
@@ -40,6 +41,17 @@ login_manager.login_view = "login"
 login_manager.login_message = "請先登入後再使用此功能。"
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+
+# =========================
+# 免費版限制設定
+# =========================
+
+FREE_PET_LIMIT = 1
+FREE_HEALTH_RECORD_LIMIT = 10
+FREE_MEDICAL_RECORD_LIMIT = 5
+FREE_REMINDER_LIMIT = 5
+FREE_AI_LIMIT = 3
 
 
 # =========================
@@ -96,6 +108,74 @@ def get_user_reminder_or_404(reminder_id):
     return reminder, pet
 
 
+def is_premium_user(user=None):
+    user = user or current_user
+    return bool(getattr(user, "is_premium", False)) or getattr(user, "plan", "free") == "premium"
+
+
+def get_current_user_pet_ids():
+    pets = Pet.query.filter_by(user_id=current_user.id).all()
+    return [pet.id for pet in pets]
+
+
+def count_user_health_records():
+    pet_ids = get_current_user_pet_ids()
+    if not pet_ids:
+        return 0
+
+    return HealthRecord.query.filter(
+        HealthRecord.pet_id.in_(pet_ids)
+    ).count()
+
+
+def count_user_medical_records():
+    pet_ids = get_current_user_pet_ids()
+    if not pet_ids:
+        return 0
+
+    return MedicalRecord.query.filter(
+        MedicalRecord.pet_id.in_(pet_ids)
+    ).count()
+
+
+def count_user_reminders():
+    pet_ids = get_current_user_pet_ids()
+    if not pet_ids:
+        return 0
+
+    return Reminder.query.filter(
+        Reminder.pet_id.in_(pet_ids)
+    ).count()
+
+
+def ensure_user_plan_columns():
+    """
+    讓舊資料庫自動補上商業模式欄位。
+    Render PostgreSQL / SQLite 都可用。
+    """
+    inspector = inspect(db.engine)
+    table_name = User.__tablename__
+
+    if table_name not in inspector.get_table_names():
+        return
+
+    existing_columns = [col["name"] for col in inspector.get_columns(table_name)]
+
+    with db.engine.begin() as conn:
+        if "plan" not in existing_columns:
+            conn.execute(text(f'ALTER TABLE "{table_name}" ADD COLUMN plan VARCHAR(20) DEFAULT \'free\''))
+
+        if "is_premium" not in existing_columns:
+            conn.execute(text(f'ALTER TABLE "{table_name}" ADD COLUMN is_premium BOOLEAN DEFAULT FALSE'))
+
+        if "ai_usage_count" not in existing_columns:
+            conn.execute(text(f'ALTER TABLE "{table_name}" ADD COLUMN ai_usage_count INTEGER DEFAULT 0'))
+
+        conn.execute(text(f'UPDATE "{table_name}" SET plan = \'free\' WHERE plan IS NULL'))
+        conn.execute(text(f'UPDATE "{table_name}" SET is_premium = FALSE WHERE is_premium IS NULL'))
+        conn.execute(text(f'UPDATE "{table_name}" SET ai_usage_count = 0 WHERE ai_usage_count IS NULL'))
+
+
 # =========================
 # 資料庫 Model
 # =========================
@@ -106,6 +186,11 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
+
+    # 商業模式欄位
+    plan = db.Column(db.String(20), default="free")
+    is_premium = db.Column(db.Boolean, default=False)
+    ai_usage_count = db.Column(db.Integer, default=0)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -305,7 +390,7 @@ def calculate_risk_score(age, weight, symptom):
 
 
 # =========================
-# 首頁 / AI 助理頁 / 健康檢查
+# 首頁 / AI 助理頁 / 功能頁
 # =========================
 
 @app.route("/")
@@ -320,7 +405,15 @@ def home():
 @login_required
 def ai_assistant():
     pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
-    return render_template("home.html", pets=pets)
+    ai_usage_count = current_user.ai_usage_count or 0
+
+    return render_template(
+        "home.html",
+        pets=pets,
+        ai_usage_count=ai_usage_count,
+        ai_limit=FREE_AI_LIMIT,
+        is_premium=is_premium_user(),
+    )
 
 
 @app.route("/features")
@@ -360,6 +453,9 @@ def register():
             username=username,
             email=email,
             password_hash=generate_password_hash(password),
+            plan="free",
+            is_premium=False,
+            ai_usage_count=0,
         )
 
         db.session.add(new_user)
@@ -402,6 +498,43 @@ def login():
 def logout():
     logout_user()
     return redirect(url_for("login"))
+
+
+# =========================
+# 商業模式 / 方案頁 / 模擬升級
+# =========================
+
+@app.route("/pricing")
+@login_required
+def pricing():
+    return render_template(
+        "pricing.html",
+        is_premium=is_premium_user(),
+        ai_usage_count=current_user.ai_usage_count or 0,
+        ai_limit=FREE_AI_LIMIT,
+    )
+
+
+@app.route("/upgrade", methods=["POST"])
+@login_required
+def upgrade():
+    current_user.plan = "premium"
+    current_user.is_premium = True
+    db.session.commit()
+
+    flash("已成功模擬升級 Premium 方案，完整功能已開放。")
+    return redirect(url_for("dashboard"))
+
+
+@app.route("/downgrade", methods=["POST"])
+@login_required
+def downgrade():
+    current_user.plan = "free"
+    current_user.is_premium = False
+    db.session.commit()
+
+    flash("已切換回 Free 免費版。")
+    return redirect(url_for("pricing"))
 
 
 # =========================
@@ -460,31 +593,37 @@ def dashboard():
         "dashboard.html",
         pets=pets,
 
-        # 上排統計卡片使用
         pet_count=len(pets),
         health_record_count=total_health_records,
         medical_record_count=total_medical_records,
         pending_reminder_count=total_pending_reminders,
 
-        # 舊版 dashboard.html 可能會用到的變數
         total_health_records=total_health_records,
         total_medical_records=total_medical_records,
         total_reminders=total_pending_reminders,
         total_all_reminders=total_all_reminders,
         total_ai_records=total_ai_records,
 
-        # 下排四張卡片使用
         pending_reminders=upcoming_reminders,
         upcoming_reminders=upcoming_reminders,
         latest_health_record=latest_health_record,
         latest_health_records=latest_health_records,
         ai_consult_count=total_ai_records,
+
+        is_premium=is_premium_user(),
+        current_plan=current_user.plan or "free",
+        ai_usage_count=current_user.ai_usage_count or 0,
+        ai_limit=FREE_AI_LIMIT,
     )
 
 
 @app.route("/health-trends")
 @login_required
 def health_trends():
+    if not is_premium_user():
+        flash("健康趨勢圖表為 Premium 付費版功能，請先升級後再使用。")
+        return redirect(url_for("pricing"))
+
     pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
     pet_ids = [pet.id for pet in pets]
 
@@ -520,7 +659,6 @@ def health_trends():
         total_reminders = len(reminders)
         total_care_records = total_health_records + total_medical_records + total_reminders
 
-        # 1. 體重趨勢資料
         for record in health_records:
             if record.weight is not None:
                 weight_trend_data.append({
@@ -529,29 +667,21 @@ def health_trends():
                     "weight": float(record.weight),
                 })
 
-        # 2. 健康狀態分析：食慾統計
         for record in health_records:
             appetite = record.appetite.strip() if record.appetite else "未填寫"
-
             if appetite == "":
                 appetite = "未填寫"
-
             appetite_stats[appetite] = appetite_stats.get(appetite, 0) + 1
 
-        # 3. 健康狀態分析：活動力統計
         for record in health_records:
             activity = record.activity.strip() if record.activity else "未填寫"
-
             if activity == "":
                 activity = "未填寫"
-
             activity_stats[activity] = activity_stats.get(activity, 0) + 1
 
-        # 4. 照護紀錄變化：健康紀錄 + 就醫紀錄 + 提醒事項，依月份統計
         for record in health_records:
             if record.record_date:
                 month_key = record.record_date.strftime("%Y-%m")
-
                 if month_key not in care_trend_map:
                     care_trend_map[month_key] = {
                         "month": month_key,
@@ -560,14 +690,12 @@ def health_trends():
                         "reminder": 0,
                         "total": 0,
                     }
-
                 care_trend_map[month_key]["health"] += 1
                 care_trend_map[month_key]["total"] += 1
 
         for record in medical_records:
             if record.visit_date:
                 month_key = record.visit_date.strftime("%Y-%m")
-
                 if month_key not in care_trend_map:
                     care_trend_map[month_key] = {
                         "month": month_key,
@@ -576,14 +704,12 @@ def health_trends():
                         "reminder": 0,
                         "total": 0,
                     }
-
                 care_trend_map[month_key]["medical"] += 1
                 care_trend_map[month_key]["total"] += 1
 
         for reminder in reminders:
             if reminder.reminder_date:
                 month_key = reminder.reminder_date.strftime("%Y-%m")
-
                 if month_key not in care_trend_map:
                     care_trend_map[month_key] = {
                         "month": month_key,
@@ -592,23 +718,16 @@ def health_trends():
                         "reminder": 0,
                         "total": 0,
                     }
-
                 care_trend_map[month_key]["reminder"] += 1
                 care_trend_map[month_key]["total"] += 1
 
     appetite_chart_data = [
-        {
-            "label": key,
-            "value": value
-        }
+        {"label": key, "value": value}
         for key, value in appetite_stats.items()
     ]
 
     activity_chart_data = [
-        {
-            "label": key,
-            "value": value
-        }
+        {"label": key, "value": value}
         for key, value in activity_stats.items()
     ]
 
@@ -634,7 +753,6 @@ def health_trends():
     )
 
 
-# 保留底線網址，避免 /health_trends 舊連結失效
 @app.route("/health_trends")
 @login_required
 def health_trends_alias():
@@ -655,6 +773,12 @@ def pets():
 @app.route("/pets/add", methods=["GET", "POST"])
 @login_required
 def add_pet():
+    if not is_premium_user():
+        current_pet_count = Pet.query.filter_by(user_id=current_user.id).count()
+        if current_pet_count >= FREE_PET_LIMIT:
+            flash("免費版最多只能建立 1 隻寵物，升級 Premium 後可管理多隻寵物。")
+            return redirect(url_for("pricing"))
+
     if request.method == "POST":
         name = request.form.get("name")
         species = request.form.get("species")
@@ -791,6 +915,11 @@ def health_records():
 def add_health_record(pet_id):
     pet = get_user_pet_or_404(pet_id)
 
+    if not is_premium_user():
+        if count_user_health_records() >= FREE_HEALTH_RECORD_LIMIT:
+            flash("免費版健康紀錄最多 10 筆，升級 Premium 後可新增不限筆數健康紀錄。")
+            return redirect(url_for("pricing"))
+
     if request.method == "POST":
         record = HealthRecord(
             pet_id=pet.id,
@@ -870,6 +999,11 @@ def medical_records():
 def add_medical_record(pet_id):
     pet = get_user_pet_or_404(pet_id)
 
+    if not is_premium_user():
+        if count_user_medical_records() >= FREE_MEDICAL_RECORD_LIMIT:
+            flash("免費版就醫紀錄最多 5 筆，升級 Premium 後可新增不限筆數就醫紀錄。")
+            return redirect(url_for("pricing"))
+
     if request.method == "POST":
         record = MedicalRecord(
             pet_id=pet.id,
@@ -947,6 +1081,11 @@ def reminders():
 def add_reminder(pet_id):
     pet = get_user_pet_or_404(pet_id)
 
+    if not is_premium_user():
+        if count_user_reminders() >= FREE_REMINDER_LIMIT:
+            flash("免費版提醒事項最多 5 筆，升級 Premium 後可新增不限筆數提醒。")
+            return redirect(url_for("pricing"))
+
     if request.method == "POST":
         reminder = Reminder(
             pet_id=pet.id,
@@ -1015,6 +1154,12 @@ def delete_reminder(reminder_id):
 @app.route("/ai", methods=["POST"])
 @login_required
 def ai():
+    if not is_premium_user():
+        current_ai_count = current_user.ai_usage_count or 0
+        if current_ai_count >= FREE_AI_LIMIT:
+            flash("免費版 AI 諮詢次數已用完，請升級 Premium 以繼續使用 AI 健康助理。")
+            return redirect(url_for("pricing"))
+
     pet_id = request.form.get("pet_id")
 
     selected_pet = None
@@ -1163,6 +1308,10 @@ def ai():
     )
 
     db.session.add(consultation)
+
+    if not is_premium_user():
+        current_user.ai_usage_count = (current_user.ai_usage_count or 0) + 1
+
     db.session.commit()
 
     pet_info = {
@@ -1186,6 +1335,9 @@ def ai():
         risk_level=risk_level,
         risk_color=risk_color,
         risk_advice=risk_advice,
+        ai_usage_count=current_user.ai_usage_count or 0,
+        ai_limit=FREE_AI_LIMIT,
+        is_premium=is_premium_user(),
     )
 
 
@@ -1196,6 +1348,10 @@ def ai():
 @app.route("/report")
 @login_required
 def report():
+    if not is_premium_user():
+        flash("健康報告匯出為 Premium 付費版功能，請先升級後再使用。")
+        return redirect(url_for("pricing"))
+
     pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
     ai_records = AIConsultation.query.filter_by(user_id=current_user.id).order_by(AIConsultation.created_at.desc()).all()
 
@@ -1204,6 +1360,7 @@ def report():
 
 with app.app_context():
     db.create_all()
+    ensure_user_plan_columns()
 
 
 if __name__ == "__main__":
