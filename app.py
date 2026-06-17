@@ -1586,7 +1586,6 @@ def report():
 
 with app.app_context():
     db.create_all()
-    ensure_user_plan_columns()
 
 
 if __name__ == "__main__":
