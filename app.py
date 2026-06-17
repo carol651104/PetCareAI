@@ -15,6 +15,8 @@ from datetime import datetime
 from sqlalchemy import text, inspect
 import os
 import uuid
+import json
+import re
 
 app = Flask(__name__)
 
@@ -148,34 +150,6 @@ def count_user_reminders():
     ).count()
 
 
-def ensure_user_plan_columns():
-    """
-    讓舊資料庫自動補上商業模式欄位。
-    Render PostgreSQL / SQLite 都可用。
-    """
-    inspector = inspect(db.engine)
-    table_name = User.__tablename__
-
-    if table_name not in inspector.get_table_names():
-        return
-
-    existing_columns = [col["name"] for col in inspector.get_columns(table_name)]
-
-    with db.engine.begin() as conn:
-        if "plan" not in existing_columns:
-            conn.execute(text(f'ALTER TABLE "{table_name}" ADD COLUMN plan VARCHAR(20) DEFAULT \'free\''))
-
-        if "is_premium" not in existing_columns:
-            conn.execute(text(f'ALTER TABLE "{table_name}" ADD COLUMN is_premium BOOLEAN DEFAULT FALSE'))
-
-        if "ai_usage_count" not in existing_columns:
-            conn.execute(text(f'ALTER TABLE "{table_name}" ADD COLUMN ai_usage_count INTEGER DEFAULT 0'))
-
-        conn.execute(text(f'UPDATE "{table_name}" SET plan = \'free\' WHERE plan IS NULL'))
-        conn.execute(text(f'UPDATE "{table_name}" SET is_premium = FALSE WHERE is_premium IS NULL'))
-        conn.execute(text(f'UPDATE "{table_name}" SET ai_usage_count = 0 WHERE ai_usage_count IS NULL'))
-
-
 # =========================
 # 資料庫 Model
 # =========================
@@ -187,7 +161,6 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
 
-    # 商業模式欄位
     plan = db.Column(db.String(20), default="free")
     is_premium = db.Column(db.Boolean, default=False)
     ai_usage_count = db.Column(db.Integer, default=0)
@@ -305,52 +278,161 @@ class AIConsultation(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+def ensure_user_plan_columns():
+    """
+    讓舊資料庫自動補上商業模式欄位。
+    避免 Render PostgreSQL 舊表沒有 plan / is_premium / ai_usage_count 時爆掉。
+    """
+    inspector = inspect(db.engine)
+    table_name = User.__tablename__
+
+    if table_name not in inspector.get_table_names():
+        return
+
+    existing_columns = [col["name"] for col in inspector.get_columns(table_name)]
+
+    with db.engine.begin() as conn:
+        if "plan" not in existing_columns:
+            conn.execute(text(f'ALTER TABLE "{table_name}" ADD COLUMN plan VARCHAR(20) DEFAULT \'free\''))
+
+        if "is_premium" not in existing_columns:
+            conn.execute(text(f'ALTER TABLE "{table_name}" ADD COLUMN is_premium BOOLEAN DEFAULT FALSE'))
+
+        if "ai_usage_count" not in existing_columns:
+            conn.execute(text(f'ALTER TABLE "{table_name}" ADD COLUMN ai_usage_count INTEGER DEFAULT 0'))
+
+        conn.execute(text(f'UPDATE "{table_name}" SET plan = \'free\' WHERE plan IS NULL'))
+        conn.execute(text(f'UPDATE "{table_name}" SET is_premium = FALSE WHERE is_premium IS NULL'))
+        conn.execute(text(f'UPDATE "{table_name}" SET ai_usage_count = 0 WHERE ai_usage_count IS NULL'))
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
 
 # =========================
-# AI 風險評分
+# AI 語意風險評分 + 規則保底
 # =========================
 
-def calculate_risk_score(age, weight, symptom):
+def get_risk_meta(score):
+    score = max(0, min(int(score), 100))
+
+    if score >= 70:
+        return score, "高風險", "danger", "建議盡快就醫或聯絡獸醫，尤其若症狀持續、加重或伴隨精神食慾異常。"
+    elif score >= 35:
+        return score, "中風險", "warning", "建議持續觀察，記錄症狀頻率、食慾、精神與排便狀況；若惡化應安排就醫。"
+    else:
+        return score, "低風險", "success", "目前可先觀察，維持飲食、飲水、精神與排便紀錄；若症狀反覆仍建議諮詢獸醫。"
+
+
+def extract_json_from_ai_text(text):
+    if not text:
+        return None
+
+    text = text.strip()
+
+    try:
+        return json.loads(text)
+    except Exception:
+        pass
+
+    match = re.search(r"\{.*\}", text, re.DOTALL)
+    if not match:
+        return None
+
+    try:
+        return json.loads(match.group(0))
+    except Exception:
+        return None
+
+
+def apply_emergency_guardrail(score, symptom):
+    symptom_text = symptom.lower().strip() if symptom else ""
+
+    emergency_keywords = [
+        "吐血",
+        "血便",
+        "血尿",
+        "抽搐",
+        "癲癇",
+        "昏倒",
+        "休克",
+        "呼吸困難",
+        "喘不過氣",
+        "無法站立",
+        "站不起來",
+        "走路不穩",
+        "意識不清",
+        "癱瘓",
+        "中毒",
+        "誤食",
+        "吃到藥",
+        "吃到巧克力",
+        "吃到洋蔥",
+        "吃到葡萄",
+    ]
+
+    matched_keywords = []
+
+    for word in emergency_keywords:
+        if word in symptom_text:
+            matched_keywords.append(word)
+
+    if matched_keywords:
+        score = max(score, 85)
+
+    return score, matched_keywords
+
+
+def fallback_rule_risk_score(age, weight, symptom):
     score = 0
-    symptom = symptom.lower() if symptom else ""
+    symptom_text = symptom.lower().strip() if symptom else ""
 
     try:
-        age = float(age)
-    except:
-        age = 0
+        age_value = float(age)
+    except Exception:
+        age_value = 0
 
     try:
-        weight = float(weight)
-    except:
-        weight = 0
+        weight_value = float(weight)
+    except Exception:
+        weight_value = 0
 
-    if age >= 10:
-        score += 20
-
-    if weight <= 2 and weight > 0:
+    if age_value >= 10:
         score += 15
+
+    if weight_value > 0 and weight_value <= 2:
+        score += 10
 
     high_risk_keywords = [
         "吐血",
+        "血便",
         "血尿",
         "抽搐",
         "昏倒",
         "呼吸困難",
-        "不吃飯",
-        "持續嘔吐",
+        "喘不過氣",
+        "站不起來",
+        "中毒",
+        "誤食",
     ]
 
     medium_risk_keywords = [
+        "吐",
         "嘔吐",
         "拉肚子",
-        "流鼻水",
-        "咳嗽",
+        "腹瀉",
+        "不吃",
+        "不吃飯",
         "精神不好",
+        "沒精神",
         "發燒",
+        "咳嗽",
+        "一直吐",
+        "連續吐",
+        "持續",
+        "反覆",
     ]
 
     low_risk_keywords = [
@@ -359,33 +441,137 @@ def calculate_risk_score(age, weight, symptom):
         "掉毛",
         "食慾正常",
         "精神正常",
+        "只吐一次",
+        "一次",
     ]
 
     for word in high_risk_keywords:
-        if word in symptom:
-            score += 40
+        if word in symptom_text:
+            score += 60
 
     for word in medium_risk_keywords:
-        if word in symptom:
+        if word in symptom_text:
             score += 20
 
     for word in low_risk_keywords:
-        if word in symptom:
-            score += 5
+        if word in symptom_text:
+            score -= 5
 
-    if score >= 70:
-        level = "高風險"
-        color = "danger"
-        advice = "建議盡快就醫或聯絡獸醫。"
-    elif score >= 35:
-        level = "中風險"
-        color = "warning"
-        advice = "建議持續觀察，若症狀加重應安排就醫。"
-    else:
-        level = "低風險"
-        color = "success"
-        advice = "目前可先觀察，並維持飲食、環境與精神狀況紀錄。"
+    score, emergency_keywords = apply_emergency_guardrail(score, symptom)
+    score, level, color, advice = get_risk_meta(score)
 
+    reason = "AI 評分失敗時使用備援規則。"
+    if emergency_keywords:
+        reason += " 偵測到高風險關鍵字：" + "、".join(emergency_keywords)
+
+    return score, level, color, advice, reason
+
+
+def calculate_ai_risk_score(
+    pet_name,
+    species,
+    breed,
+    gender,
+    age,
+    weight,
+    symptom,
+    health_history_text,
+    medical_history_text,
+    reminder_text
+):
+    risk_prompt = f"""
+你是一位寵物健康風險評估助理。
+
+請根據寵物基本資料、近期健康紀錄、就醫紀錄、提醒事項與使用者描述的症狀，評估目前健康風險。
+
+重要限制：
+1. 你不能提供正式診斷。
+2. 你只能做初步健康風險分級。
+3. 請使用繁體中文。
+4. 請只回傳 JSON，不要加任何 Markdown，不要加任何說明文字。
+5. risk_score 必須是 0 到 100 的整數。
+6. risk_level 只能是「低風險」、「中風險」、「高風險」三種之一。
+7. 若出現呼吸困難、抽搐、昏倒、吐血、血便、血尿、中毒、誤食、無法站立等情況，應評為高風險。
+
+寵物基本資料：
+名稱：{pet_name}
+物種：{species}
+品種：{breed}
+性別：{gender}
+年齡：{age} 歲
+體重：{weight} 公斤
+
+近期健康紀錄：
+{health_history_text}
+
+近期就醫紀錄：
+{medical_history_text}
+
+目前待完成提醒：
+{reminder_text}
+
+使用者描述的問題或症狀：
+{symptom}
+
+請回傳以下 JSON 格式：
+
+{{
+  "risk_score": 0,
+  "risk_level": "低風險",
+  "risk_reason": "請用一句話說明評分原因",
+  "care_priority": "請用一句話說明目前最重要的觀察或處理方向"
+}}
+"""
+
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "你是寵物健康風險評估助理，只能輸出 JSON，不能取代獸醫診斷。",
+                },
+                {
+                    "role": "user",
+                    "content": risk_prompt,
+                },
+            ],
+            temperature=0.2,
+            max_tokens=500,
+        )
+
+        raw_text = response.choices[0].message.content
+        risk_data = extract_json_from_ai_text(raw_text)
+
+        if not risk_data:
+            raise ValueError("AI 未回傳有效 JSON")
+
+        score = int(risk_data.get("risk_score", 0))
+        risk_reason = risk_data.get("risk_reason", "AI 已根據症狀描述與歷史紀錄進行語意風險評估。")
+        care_priority = risk_data.get("care_priority", "")
+
+        score = max(0, min(score, 100))
+
+        score, emergency_keywords = apply_emergency_guardrail(score, symptom)
+
+        if emergency_keywords:
+            risk_reason += " 系統同時偵測到高風險關鍵字：" + "、".join(emergency_keywords) + "，因此已提高風險等級。"
+
+        score, level, color, advice = get_risk_meta(score)
+
+        if care_priority:
+            advice = care_priority + " " + advice
+
+        return score, level, color, advice, risk_reason
+
+    except Exception as e:
+        score, level, color, advice, reason = fallback_rule_risk_score(age, weight, symptom)
+        reason += f" AI 語意評分暫時失敗，已使用備援規則。錯誤：{str(e)}"
+        return score, level, color, advice, reason
+
+
+def calculate_risk_score(age, weight, symptom):
+    score, level, color, advice, reason = fallback_rule_risk_score(age, weight, symptom)
     return score, level, color, advice
 
 
@@ -405,12 +591,11 @@ def home():
 @login_required
 def ai_assistant():
     pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
-    ai_usage_count = current_user.ai_usage_count or 0
 
     return render_template(
         "home.html",
         pets=pets,
-        ai_usage_count=ai_usage_count,
+        ai_usage_count=current_user.ai_usage_count or 0,
         ai_limit=FREE_AI_LIMIT,
         is_premium=is_premium_user(),
     )
@@ -592,24 +777,20 @@ def dashboard():
     return render_template(
         "dashboard.html",
         pets=pets,
-
         pet_count=len(pets),
         health_record_count=total_health_records,
         medical_record_count=total_medical_records,
         pending_reminder_count=total_pending_reminders,
-
         total_health_records=total_health_records,
         total_medical_records=total_medical_records,
         total_reminders=total_pending_reminders,
         total_all_reminders=total_all_reminders,
         total_ai_records=total_ai_records,
-
         pending_reminders=upcoming_reminders,
         upcoming_reminders=upcoming_reminders,
         latest_health_record=latest_health_record,
         latest_health_records=latest_health_records,
         ai_consult_count=total_ai_records,
-
         is_premium=is_premium_user(),
         current_plan=current_user.plan or "free",
         ai_usage_count=current_user.ai_usage_count or 0,
@@ -667,19 +848,16 @@ def health_trends():
                     "weight": float(record.weight),
                 })
 
-        for record in health_records:
             appetite = record.appetite.strip() if record.appetite else "未填寫"
             if appetite == "":
                 appetite = "未填寫"
             appetite_stats[appetite] = appetite_stats.get(appetite, 0) + 1
 
-        for record in health_records:
             activity = record.activity.strip() if record.activity else "未填寫"
             if activity == "":
                 activity = "未填寫"
             activity_stats[activity] = activity_stats.get(activity, 0) + 1
 
-        for record in health_records:
             if record.record_date:
                 month_key = record.record_date.strftime("%Y-%m")
                 if month_key not in care_trend_map:
@@ -1156,6 +1334,7 @@ def delete_reminder(reminder_id):
 def ai():
     if not is_premium_user():
         current_ai_count = current_user.ai_usage_count or 0
+
         if current_ai_count >= FREE_AI_LIMIT:
             flash("免費版 AI 諮詢次數已用完，請升級 Premium 以繼續使用 AI 健康助理。")
             return redirect(url_for("pricing"))
@@ -1188,6 +1367,7 @@ def ai():
             pet_id=selected_pet.id,
             is_done=False
         ).order_by(Reminder.reminder_date.asc()).limit(5).all()
+
     else:
         pet_name = request.form.get("pet_name", "")
         species = request.form.get("species", "")
@@ -1201,10 +1381,6 @@ def ai():
         pending_reminders = []
 
     symptom = request.form.get("symptom", "")
-
-    risk_score, risk_level, risk_color, risk_advice = calculate_risk_score(
-        age, weight, symptom
-    )
 
     health_history_text = "無近期健康紀錄"
     if recent_health_records:
@@ -1226,6 +1402,19 @@ def ai():
             f"{r.reminder_date}：{r.reminder_type}，備註 {r.note or '無'}"
             for r in pending_reminders
         ])
+
+    risk_score, risk_level, risk_color, risk_advice, risk_reason = calculate_ai_risk_score(
+        pet_name=pet_name,
+        species=species,
+        breed=breed,
+        gender=gender,
+        age=age,
+        weight=weight,
+        symptom=symptom,
+        health_history_text=health_history_text,
+        medical_history_text=medical_history_text,
+        reminder_text=reminder_text,
+    )
 
     prompt = f"""
 你是一位寵物健康照護助理。
@@ -1254,20 +1443,37 @@ def ai():
 使用者這次描述的問題或症狀：
 {symptom}
 
-系統初步風險評分：
+AI 語意風險評分：
 {risk_score} 分
 風險等級：{risk_level}
-系統建議：{risk_advice}
+AI 評分原因：
+{risk_reason}
+
+系統建議：
+{risk_advice}
 
 請根據寵物基本資料、歷史健康紀錄、就醫紀錄、提醒事項，以及這次使用者描述的問題，提供較個人化的初步照護建議。
 
 請依照以下格式回答：
 
-一、可能原因
-二、需要觀察的重點
-三、居家照護建議
-四、什麼情況需要就醫
-五、提醒：本建議不能取代獸醫診斷
+一、AI 風險判斷摘要
+請用 2 到 3 句話說明目前為什麼是 {risk_level}，並整合以下原因：
+{risk_reason}
+
+二、可能原因
+請列出可能造成此狀況的原因，但不要做確定診斷。
+
+三、需要觀察的重點
+請列出使用者接下來應該觀察的項目，例如食慾、精神、排便、飲水、嘔吐次數、症狀是否加重。
+
+四、居家照護建議
+請提供安全、保守的一般照護建議。
+
+五、什麼情況需要就醫
+請明確列出需要盡快就醫或聯絡獸醫的情況。
+
+六、提醒
+請提醒本建議不能取代獸醫診斷。
 """
 
     try:
@@ -1284,13 +1490,33 @@ def ai():
                 },
             ],
             temperature=0.5,
-            max_tokens=900,
+            max_tokens=1000,
         )
 
         answer = response.choices[0].message.content.replace("**", "")
 
     except Exception as e:
-        answer = f"AI 回覆產生失敗，請確認 Render 是否已設定 GROQ_API_KEY。錯誤訊息：{str(e)}"
+        answer = f"""
+一、AI 風險判斷摘要
+目前系統已完成風險評分，但 AI 建議文字產生失敗。
+
+二、可能原因
+暫時無法產生完整 AI 建議。
+
+三、需要觀察的重點
+請先觀察寵物的精神、食慾、飲水、排便、活動力與症狀是否持續或加重。
+
+四、居家照護建議
+可先記錄症狀發生時間與頻率，並避免自行餵食人用藥物。
+
+五、什麼情況需要就醫
+若出現呼吸困難、抽搐、吐血、血便、持續嘔吐、精神明顯變差或完全不吃不喝，請盡快聯絡獸醫。
+
+六、提醒
+本建議不能取代獸醫診斷。
+
+錯誤訊息：{str(e)}
+"""
 
     consultation = AIConsultation(
         user_id=current_user.id,
