@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block title %}方案升級｜PetCareAI{% endblock %}
+
+{% block content %}
+
+<div class="pricing-page">
+
+    <div class="pricing-header">
+        <h1>PetCareAI 方案選擇</h1>
+        <p>採用 Freemium 商業模式，免費版提供基本健康管理，Premium 開放完整分析與進階功能。</p>
+
+        <div class="current-plan">
+            目前方案：
+            {% if is_premium %}
+                <strong>Premium 付費版</strong>
+            {% else %}
+                <strong>Free 免費版</strong>
+                <span>AI 使用次數：{{ ai_usage_count }} / {{ ai_limit }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="pricing-grid">
+
+        <div class="plan-card">
+            <div class="plan-badge free">Free Plan</div>
+            <h2>免費版</h2>
+            <p class="plan-desc">保留基本健康管理功能，但限制使用量。</p>
+
+            <div class="price">NT$0</div>
+            <div class="price-sub">適合初次體驗與單一寵物管理</div>
+
+            <table class="plan-table">
+                <tr>
+                    <th>功能</th>
+                    <th>免費版限制</th>
+                </tr>
+                <tr>
+                    <td>會員登入與帳號管理</td>
+                    <td>可使用</td>
+                </tr>
+                <tr>
+                    <td>寵物資料管理</td>
+                    <td>最多建立 1 隻寵物</td>
+                </tr>
+                <tr>
+                    <td>健康紀錄管理</td>
+                    <td>最多 10 筆</td>
+                </tr>
+                <tr>
+                    <td>就醫紀錄管理</td>
+                    <td>最多 5 筆</td>
+                </tr>
+                <tr>
+                    <td>待完成提醒</td>
+                    <td>最多 5 筆</td>
+                </tr>
+                <tr>
+                    <td>AI 個人化健康助理</td>
+                    <td>每個帳號 3 次免費諮詢</td>
+                </tr>
+                <tr>
+                    <td>健康趨勢圖表</td>
+                    <td>不開放，需升級 Premium</td>
+                </tr>
+                <tr>
+                    <td>健康報告匯出</td>
+                    <td>不開放，需升級 Premium</td>
+                </tr>
+            </table>
+
+            {% if is_premium %}
+                <form action="{{ url_for('downgrade') }}" method="POST">
+                    <button type="submit" class="btn-plan secondary">切換回免費版</button>
+                </form>
+            {% else %}
+                <button class="btn-plan disabled" disabled>目前使用中</button>
+            {% endif %}
+        </div>
+
+        <div class="plan-card premium-card">
+            <div class="plan-badge premium">Premium Plan</div>
+            <h2>付費版</h2>
+            <p class="plan-desc">開放完整健康管理、趨勢分析、AI 諮詢與報告匯出。</p>
+
+            <div class="price">NT$99<span>/月</span></div>
+            <div class="price-sub">課堂專案使用模擬升級，不會真的付款</div>
+
+            <table class="plan-table">
+                <tr>
+                    <th>功能</th>
+                    <th>Premium 內容</th>
+                </tr>
+                <tr>
+                    <td>會員登入與帳號管理</td>
+                    <td>可使用</td>
+                </tr>
+                <tr>
+                    <td>寵物資料管理</td>
+                    <td>可建立多隻寵物</td>
+                </tr>
+                <tr>
+                    <td>健康紀錄管理</td>
+                    <td>不限筆數</td>
+                </tr>
+                <tr>
+                    <td>就醫紀錄管理</td>
+                    <td>不限筆數</td>
+                </tr>
+                <tr>
+                    <td>待完成提醒</td>
+                    <td>不限筆數</td>
+                </tr>
+                <tr>
+                    <td>AI 個人化健康助理</td>
+                    <td>不限諮詢次數</td>
+                </tr>
+                <tr>
+                    <td>健康趨勢圖表</td>
+                    <td>開放完整圖表分析</td>
+                </tr>
+                <tr>
+                    <td>健康報告匯出</td>
+                    <td>開放完整健康報告</td>
+                </tr>
+            </table>
+
+            {% if is_premium %}
+                <button class="btn-plan disabled" disabled>目前使用中</button>
+            {% else %}
+                <form action="{{ url_for('upgrade') }}" method="POST">
+                    <button type="submit" class="btn-plan primary">模擬升級 Premium</button>
+                </form>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <div class="business-note">
+        <h3>商業模式說明</h3>
+        <p>
+            PetCareAI 採用 Freemium 商業模式。免費版提供基本寵物健康管理功能，降低使用者進入門檻；
+            Premium 付費版則開放多寵物管理、無限制紀錄、AI 諮詢不限次數、健康趨勢圖表與健康報告匯出，
+            作為平台主要營收來源。
+        </p>
+    </div>
+
+</div>
+
+<style>
+    .pricing-page {
+        background: #f6f4f1;
+        min-height: 100vh;
+        padding: 32px 0 50px;
+    }
+
+    .pricing-header {
+        width: min(1120px, 92%);
+        margin: 0 auto 26px;
+    }
+
+    .pricing-header h1 {
+        color: #b66b36;
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 12px;
+    }
+
+    .pricing-header p {
+        color: #666666;
+        font-size: 0.95rem;
+        line-height: 1.8;
+    }
+
+    .current-plan {
+        margin-top: 14px;
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 14px 18px;
+        color: #555555;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+    }
+
+    .current-plan strong {
+        color: #b66b36;
+    }
+
+    .current-plan span {
+        margin-left: 12px;
+        color: #777777;
+        font-size: 0.9rem;
+    }
+
+    .pricing-grid {
+        width: min(1120px, 92%);
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
+    }
+
+    .plan-card {
+        background: #ffffff;
+        border-radius: 22px;
+        padding: 28px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        border: 2px solid transparent;
+    }
+
+    .premium-card {
+        border-color: #f2b5cd;
+    }
+
+    .plan-badge {
+        display: inline-flex;
+        padding: 7px 14px;
+        border-radius: 999px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        margin-bottom: 16px;
+    }
+
+    .plan-badge.free {
+        background: #eef3ff;
+        color: #6d8fd6;
+    }
+
+    .plan-badge.premium {
+        background: #fff0f6;
+        color: #d85c8a;
+    }
+
+    .plan-card h2 {
+        color: #b66b36;
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .plan-desc {
+        color: #666666;
+        font-size: 0.92rem;
+        line-height: 1.7;
+        min-height: 52px;
+    }
+
+    .price {
+        color: #bd7339;
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin: 18px 0 4px;
+    }
+
+    .price span {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #777777;
+    }
+
+    .price-sub {
+        color: #888888;
+        font-size: 0.85rem;
+        margin-bottom: 20px;
+    }
+
+    .plan-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 22px;
+    }
+
+    .plan-table th {
+        color: #444444;
+        font-size: 0.88rem;
+        text-align: left;
+        border-bottom: 1px solid #eeeeee;
+        padding: 11px 0;
+    }
+
+    .plan-table td {
+        color: #555555;
+        font-size: 0.86rem;
+        line-height: 1.6;
+        border-bottom: 1px solid #f0f0f0;
+        padding: 11px 0;
+        vertical-align: top;
+    }
+
+    .plan-table td:first-child {
+        width: 45%;
+        font-weight: 600;
+        color: #6a4a35;
+    }
+
+    .btn-plan {
+        width: 100%;
+        border: none;
+        border-radius: 999px;
+        padding: 12px 18px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .btn-plan.primary {
+        background: linear-gradient(135deg, #f28ab2, #d85c8a);
+        color: #ffffff;
+    }
+
+    .btn-plan.secondary {
+        background: #8faeee;
+        color: #ffffff;
+    }
+
+    .btn-plan.disabled {
+        background: #d9deef;
+        color: #777777;
+        cursor: not-allowed;
+    }
+
+    .business-note {
+        width: min(1120px, 92%);
+        margin: 26px auto 0;
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 24px 28px;
+        box-shadow: 0 8px 26px rgba(0, 0, 0, 0.04);
+    }
+
+    .business-note h3 {
+        color: #b66b36;
+        font-size: 1.15rem;
+        font-weight: 700;
+        margin-bottom: 12px;
+    }
+
+    .business-note p {
+        color: #666666;
+        font-size: 0.94rem;
+        line-height: 1.9;
+        margin: 0;
+    }
+
+    @media (max-width: 900px) {
+        .pricing-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+{% endblock %}
