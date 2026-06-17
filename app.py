@@ -280,8 +280,8 @@ class AIConsultation(db.Model):
 
 def ensure_user_plan_columns():
     """
-    讓舊資料庫自動補上商業模式欄位。
-    避免 Render PostgreSQL 舊表沒有 plan / is_premium / ai_usage_count 時爆掉。
+    如果舊資料庫沒有 plan / is_premium / ai_usage_count，可用這個函式補欄位。
+    目前沒有在啟動時自動執行，避免 Render 部署時卡住。
     """
     inspector = inspect(db.engine)
     table_name = User.__tablename__
@@ -371,6 +371,8 @@ def apply_emergency_guardrail(score, symptom):
         "吃到巧克力",
         "吃到洋蔥",
         "吃到葡萄",
+        "完全不吃",
+        "完全不喝",
     ]
 
     matched_keywords = []
@@ -383,6 +385,74 @@ def apply_emergency_guardrail(score, symptom):
         score = max(score, 85)
 
     return score, matched_keywords
+
+
+def calibrate_ai_score(score, symptom):
+    """
+    分數校正：
+    避免 AI 對輕微症狀過度保守，例如「吐一次」被判成高風險。
+    但如果有嚴重症狀，則不降分。
+    """
+    symptom_text = symptom.lower().strip() if symptom else ""
+
+    mild_vomit_keywords = [
+        "吐了一次",
+        "吐一次",
+        "只吐一次",
+        "嘔吐一次",
+        "又吐了一次",
+        "今天吐了一次",
+    ]
+
+    stable_keywords = [
+        "精神正常",
+        "食慾正常",
+        "活動正常",
+        "有吃飯",
+        "有喝水",
+        "精神還好",
+        "食慾還好",
+        "看起來正常",
+    ]
+
+    severe_keywords = [
+        "一直吐",
+        "連續吐",
+        "吐很多次",
+        "吐好幾次",
+        "不吃飯",
+        "不喝水",
+        "完全不吃",
+        "完全不喝",
+        "精神不好",
+        "沒精神",
+        "很虛弱",
+        "吐血",
+        "血便",
+        "血尿",
+        "呼吸困難",
+        "喘不過氣",
+        "抽搐",
+        "昏倒",
+        "站不起來",
+        "中毒",
+        "誤食",
+    ]
+
+    has_mild_vomit = any(word in symptom_text for word in mild_vomit_keywords)
+    has_stable = any(word in symptom_text for word in stable_keywords)
+    has_severe = any(word in symptom_text for word in severe_keywords)
+
+    if has_mild_vomit and not has_severe:
+        score = min(score, 35)
+
+    if has_stable and not has_severe:
+        score = min(score, 30)
+
+    if has_mild_vomit and has_stable and not has_severe:
+        score = min(score, 25)
+
+    return max(0, min(int(score), 100))
 
 
 def fallback_rule_risk_score(age, weight, symptom):
@@ -457,6 +527,7 @@ def fallback_rule_risk_score(age, weight, symptom):
         if word in symptom_text:
             score -= 5
 
+    score = calibrate_ai_score(score, symptom)
     score, emergency_keywords = apply_emergency_guardrail(score, symptom)
     score, level, color, advice = get_risk_meta(score)
 
@@ -491,7 +562,35 @@ def calculate_ai_risk_score(
 4. 請只回傳 JSON，不要加任何 Markdown，不要加任何說明文字。
 5. risk_score 必須是 0 到 100 的整數。
 6. risk_level 只能是「低風險」、「中風險」、「高風險」三種之一。
-7. 若出現呼吸困難、抽搐、昏倒、吐血、血便、血尿、中毒、誤食、無法站立等情況，應評為高風險。
+7. 不可以因為單一輕微症狀就直接評為高風險。
+8. 若使用者描述症狀輕微，且精神、食慾、活動力仍正常，應傾向低風險或中低風險。
+9. 若資訊不足，請保守評估為中低風險，不要直接評為高風險。
+10. 若出現呼吸困難、抽搐、昏倒、吐血、血便、血尿、中毒、誤食、無法站立、完全不吃不喝等情況，才應評為高風險。
+
+請依照以下評分標準：
+
+0 到 20 分：
+輕微症狀，且精神、食慾、活動力大致正常。
+例如：偶爾吐一次、打噴嚏、輕微抓癢、短暫食慾變化。
+
+21 到 34 分：
+低到中度風險，需要觀察。
+例如：吐一次但原因不明、輕微拉肚子、精神稍差但仍可活動。
+
+35 到 69 分：
+中風險，需要密切觀察，若持續或加重應就醫。
+例如：反覆嘔吐、拉肚子多次、食慾明顯下降、精神不好、發燒、咳嗽加重。
+
+70 到 100 分：
+高風險，建議盡快就醫或聯絡獸醫。
+例如：呼吸困難、抽搐、昏倒、吐血、血便、血尿、疑似中毒、誤食危險物、無法站立、完全不吃不喝、持續劇烈嘔吐。
+
+特別注意：
+- 「吐了一次」本身通常不應評為高風險。
+- 「又吐了一次」若沒有其他嚴重症狀，通常應落在 20 到 35 分。
+- 「吐了一次，但精神正常、食慾正常」通常應落在 10 到 25 分。
+- 「一直吐、不吃飯、精神很差」才應落在 60 分以上。
+- 「呼吸困難、抽搐、吐血、血便、站不起來」才應落在 80 分以上。
 
 寵物基本資料：
 名稱：{pet_name}
@@ -552,6 +651,7 @@ def calculate_ai_risk_score(
 
         score = max(0, min(score, 100))
 
+        score = calibrate_ai_score(score, symptom)
         score, emergency_keywords = apply_emergency_guardrail(score, symptom)
 
         if emergency_keywords:
@@ -1586,6 +1686,8 @@ def report():
 
 with app.app_context():
     db.create_all()
+    # 不自動執行 ensure_user_plan_columns()，避免 Render 部署時卡住。
+    # 如果舊資料庫缺少 plan / is_premium / ai_usage_count，再另外處理。
 
 
 if __name__ == "__main__":
