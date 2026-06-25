@@ -1,138 +1,157 @@
 {% extends "base.html" %}
 
-{% block title %}健康趨勢圖表｜PetCareAI{% endblock %}
+{% block title %}健康趨勢圖表{% endblock %}
 
 {% block content %}
 
-<div class="trend-page">
+<div class="health-trends-page">
 
-    <div class="trend-container">
+    <div class="page-header">
+        <h1>健康趨勢圖表</h1>
+        <p class="muted">
+            透過圖表化方式查看寵物的體重、健康狀態與照護紀錄變化。
+        </p>
+    </div>
 
-        <div class="trend-header">
-            <h1>健康趨勢圖表</h1>
-            <p>
-                透過圖表化方式查看寵物的體重、健康狀態與照護紀錄變化。
-            </p>
+    <div class="summary-grid">
+        <div class="summary-card">
+            <strong>{{ total_health_records }}</strong>
+            <span>健康紀錄</span>
         </div>
 
-        <!-- 上方統計摘要 -->
-        <div class="trend-summary-grid">
-
-            <div class="summary-card">
-                <div class="summary-number">{{ total_health_records }}</div>
-                <div class="summary-label">健康紀錄</div>
-            </div>
-
-            <div class="summary-card">
-                <div class="summary-number">{{ total_medical_records }}</div>
-                <div class="summary-label">就醫紀錄</div>
-            </div>
-
-            <div class="summary-card">
-                <div class="summary-number">{{ total_reminders }}</div>
-                <div class="summary-label">提醒事項</div>
-            </div>
-
-            <div class="summary-card">
-                <div class="summary-number">{{ total_care_records }}</div>
-                <div class="summary-label">照護總紀錄</div>
-            </div>
-
+        <div class="summary-card">
+            <strong>{{ total_medical_records }}</strong>
+            <span>就醫紀錄</span>
         </div>
 
-        <!-- 圖表區 -->
-        <div class="trend-grid">
+        <div class="summary-card">
+            <strong>{{ total_reminders }}</strong>
+            <span>提醒事項</span>
+        </div>
 
-            <!-- 1. 體重趨勢 -->
+        <div class="summary-card">
+            <strong>{{ total_care_records }}</strong>
+            <span>照護總紀錄</span>
+        </div>
+    </div>
+
+    <div class="trend-layout">
+
+        <div class="main-column">
+
             <div class="trend-card">
-                <h5>體重趨勢</h5>
-                <p>顯示健康紀錄中的體重變化，方便觀察寵物是否有明顯增減。</p>
+                <h2>體重趨勢</h2>
+                <p class="muted">
+                    顯示健康紀錄中的體重變化，方便觀察寵物是否有明顯增減。
+                </p>
 
-                <div class="chart-box">
-                    {% if weight_trend_data %}
-                        <canvas id="weightChart"></canvas>
-                    {% else %}
-                        <div class="empty-chart">
-                            尚無體重資料，新增健康紀錄並填寫體重後即可顯示圖表。
-                        </div>
-                    {% endif %}
-                </div>
+                {% if weight_trend_data|length >= 2 %}
+                    <div class="chart-canvas-wrap large">
+                        <canvas id="weightTrendChart"></canvas>
+                    </div>
+                {% elif weight_trend_data|length == 1 %}
+                    <div class="empty-chart">
+                        目前只有一筆體重紀錄，尚無法形成趨勢。<br>
+                        最近體重：{{ weight_trend_data[0].weight }} kg
+                    </div>
+                {% else %}
+                    <div class="empty-chart">
+                        目前沒有可用的體重紀錄。
+                    </div>
+                {% endif %}
             </div>
 
-            <!-- 2. 健康紀錄數量 -->
             <div class="trend-card">
-                <h5>健康紀錄數量</h5>
-                <p>統計目前已建立的健康紀錄筆數，協助了解照護紀錄是否完整。</p>
+                <h2>健康狀態分析</h2>
+                <p class="muted">
+                    依照健康紀錄中的食慾與活動力欄位，統計寵物近期健康狀態。
+                </p>
 
-                <div class="number-preview">
-                    <div class="big-number">{{ total_health_records }}</div>
-                    <div class="chart-label">目前健康紀錄總數</div>
+                <div class="sub-chart-grid">
+                    <div class="sub-chart-card">
+                        <h3>食慾狀態</h3>
 
-                    <div class="mini-count-list">
-                        <div>
-                            <span>就醫紀錄</span>
-                            <strong>{{ total_medical_records }}</strong>
-                        </div>
-                        <div>
-                            <span>提醒事項</span>
-                            <strong>{{ total_reminders }}</strong>
-                        </div>
-                        <div>
-                            <span>照護總數</span>
-                            <strong>{{ total_care_records }}</strong>
-                        </div>
+                        {% if appetite_chart_data %}
+                            <div class="chart-canvas-wrap medium">
+                                <canvas id="appetiteChart"></canvas>
+                            </div>
+                        {% else %}
+                            <div class="empty-chart small">
+                                目前沒有食慾紀錄。
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="sub-chart-card">
+                        <h3>活動力狀態</h3>
+
+                        {% if activity_chart_data %}
+                            <div class="chart-canvas-wrap medium">
+                                <canvas id="activityChart"></canvas>
+                            </div>
+                        {% else %}
+                            <div class="empty-chart small">
+                                目前沒有活動力紀錄。
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
 
-            <!-- 3. 健康狀態分析 -->
-            <div class="trend-card">
-                <h5>健康狀態分析</h5>
-                <p>依照健康紀錄中的食慾與活動力欄位，統計寵物近期健康狀態。</p>
+        </div>
 
-                <div class="chart-box double-chart-box">
-                    {% if appetite_chart_data or activity_chart_data %}
-                        <div class="small-chart-wrap">
-                            <h6>食慾狀態</h6>
-                            <canvas id="appetiteChart"></canvas>
-                        </div>
+        <div class="side-column">
 
-                        <div class="small-chart-wrap">
-                            <h6>活動力狀態</h6>
-                            <canvas id="activityChart"></canvas>
-                        </div>
-                    {% else %}
-                        <div class="empty-chart">
-                            尚無食慾或活動力資料，新增健康紀錄後即可顯示分析。
-                        </div>
-                    {% endif %}
+            <div class="side-card">
+                <h2>健康紀錄數量</h2>
+                <p class="muted">
+                    統計目前已建立的健康紀錄筆數，協助了解照護紀錄是否完整。
+                </p>
+
+                <div class="number-panel">
+                    <strong>{{ total_health_records }}</strong>
+                    <span>目前健康紀錄總數</span>
+
+                    <div class="mini-row">
+                        <span>就醫紀錄</span>
+                        <b>{{ total_medical_records }}</b>
+                    </div>
+
+                    <div class="mini-row">
+                        <span>提醒事項</span>
+                        <b>{{ total_reminders }}</b>
+                    </div>
+
+                    <div class="mini-row">
+                        <span>照護總數</span>
+                        <b>{{ total_care_records }}</b>
+                    </div>
                 </div>
             </div>
 
-            <!-- 4. 每月照護紀錄統計 -->
-            <div class="trend-card">
-                <h5>每月照護紀錄統計</h5>
-                <p>以月份統計健康紀錄、就醫紀錄與提醒事項，方便查看每月照護次數。</p>
+            <div class="side-card">
+                <h2>每月照護紀錄統計</h2>
+                <p class="muted">
+                    以月份統計健康紀錄、就醫紀錄與提醒事項，方便查看每月照護次數。
+                </p>
 
-                <div class="chart-box">
-                    {% if care_trend_data %}
+                {% if care_trend_data %}
+                    <div class="chart-canvas-wrap side-chart">
                         <canvas id="careTrendChart"></canvas>
-                    {% else %}
-                        <div class="empty-chart">
-                            尚無照護紀錄資料，新增健康紀錄、就醫紀錄或提醒事項後即可顯示統計圖。
-                        </div>
-                    {% endif %}
-                </div>
+                    </div>
+                {% else %}
+                    <div class="empty-chart small">
+                        目前沒有照護紀錄資料。
+                    </div>
+                {% endif %}
             </div>
 
         </div>
 
-        <div class="back-area">
-            <a href="{{ url_for('dashboard') }}" class="btn-back">
-                返回 Dashboard
-            </a>
-        </div>
+    </div>
 
+    <div class="bottom-actions">
+        <a class="btn" href="{{ url_for('dashboard') }}">返回 Dashboard</a>
     </div>
 
 </div>
@@ -145,108 +164,49 @@
     const activityChartData = {{ activity_chart_data | tojson }};
     const careTrendData = {{ care_trend_data | tojson }};
 
-    const chartColors = {
-        blue: "#8faeee",
-        pink: "#f7a9c8",
-        orange: "#ffd27d",
-        green: "#9bd6a5",
-        purple: "#b8a6f6",
-        brown: "#b66b36",
-        gray: "#d9deef"
-    };
-
-    function makeColorList(count) {
-        const colors = [
-            chartColors.pink,
-            chartColors.blue,
-            chartColors.orange,
-            chartColors.green,
-            chartColors.purple,
-            "#f4b183",
-            "#a9d18e",
-            "#c9b6e4"
-        ];
-
-        const result = [];
-
-        for (let i = 0; i < count; i++) {
-            result.push(colors[i % colors.length]);
-        }
-
-        return result;
-    }
-
-    function createWeightChart() {
-        const canvas = document.getElementById("weightChart");
-
-        if (!canvas || weightTrendData.length === 0) {
-            return;
-        }
-
-        const labels = weightTrendData.map(item => `${item.date} ${item.pet_name}`);
-        const weights = weightTrendData.map(item => item.weight);
-
-        new Chart(canvas, {
+    if (document.getElementById("weightTrendChart") && weightTrendData.length >= 2) {
+        new Chart(document.getElementById("weightTrendChart"), {
             type: "line",
             data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: "體重 kg",
-                        data: weights,
-                        borderColor: chartColors.blue,
-                        backgroundColor: "rgba(143, 174, 238, 0.18)",
-                        pointBackgroundColor: chartColors.pink,
-                        pointBorderColor: chartColors.pink,
-                        pointRadius: 5,
-                        pointHoverRadius: 7,
-                        borderWidth: 3,
-                        tension: 0.35,
-                        fill: true
+                labels: weightTrendData.map(item => {
+                    if (item.pet_name) {
+                        return item.date + " " + item.pet_name;
                     }
-                ]
+                    return item.date;
+                }),
+                datasets: [{
+                    label: "體重 kg",
+                    data: weightTrendData.map(item => item.weight),
+                    borderWidth: 3,
+                    tension: 0.35,
+                    pointRadius: 5,
+                    fill: true
+                }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        display: true,
-                        labels: {
-                            color: "#555555",
-                            font: {
-                                family: "'Noto Sans TC', sans-serif"
-                            }
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `體重：${context.raw} kg`;
-                            }
-                        }
+                        display: true
                     }
                 },
                 scales: {
-                    x: {
-                        ticks: {
-                            color: "#666666",
-                            maxRotation: 35,
-                            minRotation: 0
-                        },
-                        grid: {
-                            display: false
+                    y: {
+                        title: {
+                            display: true,
+                            text: "體重 kg"
                         }
                     },
-                    y: {
+                    x: {
                         ticks: {
-                            color: "#666666",
-                            callback: function(value) {
-                                return value + " kg";
-                            }
+                            maxRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: 6
                         },
-                        grid: {
-                            color: "rgba(180, 185, 210, 0.25)"
+                        title: {
+                            display: true,
+                            text: "日期"
                         }
                     }
                 }
@@ -254,78 +214,40 @@
         });
     }
 
-    function createAppetiteChart() {
-        const canvas = document.getElementById("appetiteChart");
-
-        if (!canvas || appetiteChartData.length === 0) {
-            return;
-        }
-
-        const labels = appetiteChartData.map(item => item.label);
-        const values = appetiteChartData.map(item => item.value);
-
-        new Chart(canvas, {
+    if (document.getElementById("appetiteChart") && appetiteChartData.length > 0) {
+        new Chart(document.getElementById("appetiteChart"), {
             type: "doughnut",
             data: {
-                labels: labels,
-                datasets: [
-                    {
-                        data: values,
-                        backgroundColor: makeColorList(values.length),
-                        borderColor: "#ffffff",
-                        borderWidth: 3
-                    }
-                ]
+                labels: appetiteChartData.map(item => item.label),
+                datasets: [{
+                    label: "食慾狀態",
+                    data: appetiteChartData.map(item => item.value),
+                    borderWidth: 1
+                }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                cutout: "58%",
                 plugins: {
                     legend: {
-                        position: "bottom",
-                        labels: {
-                            color: "#555555",
-                            boxWidth: 12,
-                            font: {
-                                family: "'Noto Sans TC', sans-serif"
-                            }
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.label}：${context.raw} 筆`;
-                            }
-                        }
+                        position: "bottom"
                     }
                 }
             }
         });
     }
 
-    function createActivityChart() {
-        const canvas = document.getElementById("activityChart");
-
-        if (!canvas || activityChartData.length === 0) {
-            return;
-        }
-
-        const labels = activityChartData.map(item => item.label);
-        const values = activityChartData.map(item => item.value);
-
-        new Chart(canvas, {
+    if (document.getElementById("activityChart") && activityChartData.length > 0) {
+        new Chart(document.getElementById("activityChart"), {
             type: "bar",
             data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: "活動力紀錄數",
-                        data: values,
-                        backgroundColor: makeColorList(values.length),
-                        borderRadius: 12
-                    }
-                ]
+                labels: activityChartData.map(item => item.label),
+                datasets: [{
+                    label: "活動力狀態",
+                    data: activityChartData.map(item => item.value),
+                    borderWidth: 1,
+                    borderRadius: 8
+                }]
             },
             options: {
                 responsive: true,
@@ -333,35 +255,17 @@
                 plugins: {
                     legend: {
                         display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.label}：${context.raw} 筆`;
-                            }
-                        }
                     }
                 },
                 scales: {
-                    x: {
-                        ticks: {
-                            color: "#666666"
-                        },
-                        grid: {
-                            display: false
-                        }
-                    },
                     y: {
                         beginAtZero: true,
                         ticks: {
-                            color: "#666666",
-                            precision: 0,
-                            callback: function(value) {
-                                return value + " 筆";
-                            }
+                            precision: 0
                         },
-                        grid: {
-                            color: "rgba(180, 185, 210, 0.25)"
+                        title: {
+                            display: true,
+                            text: "筆數"
                         }
                     }
                 }
@@ -369,40 +273,29 @@
         });
     }
 
-    function createCareTrendChart() {
-        const canvas = document.getElementById("careTrendChart");
-
-        if (!canvas || careTrendData.length === 0) {
-            return;
-        }
-
-        const labels = careTrendData.map(item => item.month);
-        const healthValues = careTrendData.map(item => item.health);
-        const medicalValues = careTrendData.map(item => item.medical);
-        const reminderValues = careTrendData.map(item => item.reminder);
-
-        new Chart(canvas, {
+    if (document.getElementById("careTrendChart") && careTrendData.length > 0) {
+        new Chart(document.getElementById("careTrendChart"), {
             type: "bar",
             data: {
-                labels: labels,
+                labels: careTrendData.map(item => item.month),
                 datasets: [
                     {
                         label: "健康紀錄",
-                        data: healthValues,
-                        backgroundColor: chartColors.blue,
-                        borderRadius: 10
+                        data: careTrendData.map(item => item.health),
+                        borderWidth: 1,
+                        borderRadius: 8
                     },
                     {
                         label: "就醫紀錄",
-                        data: medicalValues,
-                        backgroundColor: chartColors.pink,
-                        borderRadius: 10
+                        data: careTrendData.map(item => item.medical),
+                        borderWidth: 1,
+                        borderRadius: 8
                     },
                     {
                         label: "提醒事項",
-                        data: reminderValues,
-                        backgroundColor: chartColors.orange,
-                        borderRadius: 10
+                        data: careTrendData.map(item => item.reminder),
+                        borderWidth: 1,
+                        borderRadius: 8
                     }
                 ]
             },
@@ -411,95 +304,48 @@
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        position: "bottom",
-                        labels: {
-                            color: "#555555",
-                            font: {
-                                family: "'Noto Sans TC', sans-serif"
-                            }
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.dataset.label}：${context.raw} 筆`;
-                            },
-                            footer: function(context) {
-                                let total = 0;
-
-                                context.forEach(item => {
-                                    total += item.raw;
-                                });
-
-                                return "本月總照護紀錄：" + total + " 筆";
-                            }
-                        }
+                        position: "bottom"
                     }
                 },
                 scales: {
-                    x: {
-                        stacked: false,
-                        ticks: {
-                            color: "#666666"
-                        },
-                        grid: {
-                            display: false
-                        }
-                    },
                     y: {
                         beginAtZero: true,
                         ticks: {
-                            color: "#666666",
-                            precision: 0,
-                            callback: function(value) {
-                                return value + " 筆";
-                            }
+                            precision: 0
                         },
-                        grid: {
-                            color: "rgba(180, 185, 210, 0.25)"
+                        title: {
+                            display: true,
+                            text: "筆數"
                         }
                     }
                 }
             }
         });
     }
-
-    document.addEventListener("DOMContentLoaded", function() {
-        createWeightChart();
-        createAppetiteChart();
-        createActivityChart();
-        createCareTrendChart();
-    });
 </script>
 
 <style>
-    .trend-page {
-        background: #f6f4f1;
-        min-height: 100vh;
-        padding: 34px 0 50px;
-    }
-
-    .trend-container {
+    .health-trends-page {
         width: min(1120px, 92%);
         margin: 0 auto;
+        padding-bottom: 60px;
+        overflow-x: hidden;
+        box-sizing: border-box;
     }
 
-    .trend-header h1 {
+    .page-header {
+        margin-bottom: 28px;
+    }
+
+    .page-header h1 {
         color: #b66b36;
-        font-size: 1.75rem;
-        font-weight: 700;
-        margin-bottom: 14px;
+        font-size: 1.8rem;
+        margin-bottom: 12px;
     }
 
-    .trend-header p {
-        color: #666666;
-        font-size: 0.95rem;
-        margin-bottom: 26px;
-    }
-
-    .trend-summary-grid {
+    .summary-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 18px;
         margin-bottom: 24px;
     }
@@ -507,202 +353,212 @@
     .summary-card {
         background: #ffffff;
         border-radius: 18px;
-        padding: 22px 20px;
+        padding: 22px;
         box-shadow: 0 8px 26px rgba(0, 0, 0, 0.04);
+        box-sizing: border-box;
+        min-width: 0;
     }
 
-    .summary-number {
-        color: #bd7339;
-        font-size: 2rem;
-        font-weight: 700;
-        line-height: 1;
-        margin-bottom: 10px;
-    }
-
-    .summary-label {
-        color: #666666;
-        font-size: 0.9rem;
-        font-weight: 600;
-    }
-
-    .trend-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 22px;
-    }
-
-    .trend-card {
-        background: #ffffff;
-        border-radius: 18px;
-        padding: 28px;
-        min-height: 380px;
-        box-shadow: 0 8px 26px rgba(0, 0, 0, 0.04);
-    }
-
-    .trend-card h5 {
+    .summary-card strong {
+        display: block;
         color: #b66b36;
-        font-size: 1.05rem;
-        font-weight: 700;
+        font-size: 2rem;
+        margin-bottom: 8px;
+    }
+
+    .summary-card span {
+        color: #444444;
+        font-size: 0.95rem;
+    }
+
+    .trend-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+        gap: 22px;
+        align-items: start;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+
+    .main-column,
+    .side-column {
+        min-width: 0;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .trend-card,
+    .side-card {
+        background: #ffffff;
+        border-radius: 22px;
+        padding: 28px;
+        margin-bottom: 22px;
+        box-shadow: 0 8px 26px rgba(0, 0, 0, 0.04);
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+
+    .trend-card h2,
+    .side-card h2 {
+        color: #b66b36;
+        font-size: 1.12rem;
         margin-bottom: 14px;
     }
 
-    .trend-card p {
-        color: #666666;
-        font-size: 0.9rem;
-        line-height: 1.8;
-        margin-bottom: 22px;
-    }
-
-    .chart-box,
-    .number-preview {
-        background: #f5f7ff;
-        border-radius: 16px;
-        min-height: 240px;
-        padding: 22px;
-        border: 1px solid #edf0fb;
-        position: relative;
-    }
-
-    .chart-box {
-        height: 260px;
-    }
-
-    .double-chart-box {
-        height: auto;
-        min-height: 260px;
+    .sub-chart-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 18px;
+        margin-top: 20px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
     }
 
-    .small-chart-wrap {
-        min-height: 220px;
-        position: relative;
+    .sub-chart-card {
+        background: #f6f8ff;
+        border-radius: 18px;
+        padding: 18px;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        overflow: hidden;
     }
 
-    .small-chart-wrap h6 {
-        color: #666666;
-        font-size: 0.88rem;
-        font-weight: 700;
-        margin-bottom: 12px;
+    .sub-chart-card h3 {
         text-align: center;
+        color: #b66b36;
+        font-size: 0.95rem;
+        margin-bottom: 12px;
     }
 
-    .small-chart-wrap canvas {
-        height: 190px !important;
+    .chart-canvas-wrap {
+        position: relative;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow: hidden;
+        box-sizing: border-box;
     }
 
-    .number-preview {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
+    .chart-canvas-wrap.large {
+        height: 300px;
+        background: #f6f8ff;
+        border-radius: 18px;
+        padding: 16px;
+    }
+
+    .chart-canvas-wrap.medium {
         height: 260px;
     }
 
-    .big-number {
-        color: #bd7339;
-        font-size: 3.2rem;
-        font-weight: 700;
-        line-height: 1;
-        margin-bottom: 12px;
+    .chart-canvas-wrap.side-chart {
+        height: 260px;
+        background: #f6f8ff;
+        border-radius: 18px;
+        padding: 16px;
     }
 
-    .chart-label {
-        color: #777777;
-        font-size: 0.84rem;
+    .chart-canvas-wrap canvas {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        display: block;
+    }
+
+    .number-panel {
+        background: #f6f8ff;
+        border-radius: 18px;
+        padding: 28px;
         text-align: center;
-        margin-bottom: 18px;
+        margin-top: 20px;
     }
 
-    .mini-count-list {
-        width: 100%;
-        max-width: 260px;
-        display: grid;
-        gap: 8px;
+    .number-panel > strong {
+        display: block;
+        color: #b66b36;
+        font-size: 2.6rem;
+        margin-bottom: 8px;
     }
 
-    .mini-count-list div {
-        background: #ffffff;
-        border-radius: 12px;
-        padding: 9px 12px;
+    .number-panel > span {
+        display: block;
+        color: #666666;
+        margin-bottom: 20px;
+    }
+
+    .mini-row {
         display: flex;
         justify-content: space-between;
-        align-items: center;
-        color: #666666;
-        font-size: 0.85rem;
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 10px 14px;
+        margin-bottom: 8px;
+        color: #555555;
+        font-size: 0.9rem;
     }
 
-    .mini-count-list strong {
+    .mini-row b {
         color: #b66b36;
     }
 
     .empty-chart {
-        height: 100%;
-        min-height: 190px;
+        min-height: 220px;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #777777;
-        font-size: 0.9rem;
-        line-height: 1.8;
         text-align: center;
+        background: #f6f8ff;
+        border-radius: 18px;
+        color: #777777;
+        line-height: 1.8;
         padding: 20px;
+        box-sizing: border-box;
     }
 
-    .back-area {
-        margin-top: 28px;
+    .empty-chart.small {
+        min-height: 180px;
     }
 
-    .btn-back {
-        display: inline-flex;
-        justify-content: center;
-        align-items: center;
-        background: #8faeee;
-        color: #ffffff;
-        border-radius: 999px;
-        padding: 10px 20px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        text-decoration: none;
+    .bottom-actions {
+        margin-top: 24px;
     }
 
-    .btn-back:hover {
-        background: #789be0;
-        color: #ffffff;
-    }
-
-    @media (max-width: 992px) {
-        .trend-summary-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-
-        .trend-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .double-chart-box {
+    @media (max-width: 1000px) {
+        .trend-layout {
             grid-template-columns: 1fr;
         }
 
-        .small-chart-wrap {
-            min-height: 240px;
+        .summary-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
     }
 
-    @media (max-width: 576px) {
-        .trend-summary-grid {
+    @media (max-width: 700px) {
+        .health-trends-page {
+            width: min(94%, 100%);
+        }
+
+        .summary-grid,
+        .sub-chart-grid {
             grid-template-columns: 1fr;
         }
 
-        .trend-card {
+        .trend-card,
+        .side-card {
             padding: 22px;
-            min-height: auto;
         }
 
-        .chart-box {
+        .chart-canvas-wrap.large,
+        .chart-canvas-wrap.medium,
+        .chart-canvas-wrap.side-chart {
             height: 260px;
         }
     }
