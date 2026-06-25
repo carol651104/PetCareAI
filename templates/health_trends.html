@@ -9,7 +9,7 @@
     <div class="page-header">
         <h1>健康趨勢圖表</h1>
         <p class="muted">
-            透過圖表化方式查看寵物的體重、健康狀態與照護紀錄變化。
+            依照每隻寵物分組查看體重、健康狀態與照護紀錄變化，避免不同寵物的資料混在同一張圖表中。
         </p>
     </div>
 
@@ -35,120 +35,143 @@
         </div>
     </div>
 
-    <div class="trend-layout">
+    {% if pet_trend_data %}
+        <div class="pet-trend-list">
+            {% for item in pet_trend_data %}
+                <details class="pet-trend-accordion" {% if loop.first %}open{% endif %}>
+                    <summary>
+                        <div class="pet-summary-left">
+                            {% if item.pet.photo_url %}
+                                <img src="{{ item.pet.photo_url }}" alt="{{ item.pet.name }}" class="pet-thumb">
+                            {% else %}
+                                <div class="pet-thumb-placeholder">🐾</div>
+                            {% endif %}
 
-        <div class="main-column">
-
-            <div class="trend-card">
-                <h2>體重趨勢</h2>
-                <p class="muted">
-                    顯示健康紀錄中的體重變化，方便觀察寵物是否有明顯增減。
-                </p>
-
-                {% if weight_trend_data|length >= 2 %}
-                    <div class="chart-canvas-wrap large">
-                        <canvas id="weightTrendChart"></canvas>
-                    </div>
-                {% elif weight_trend_data|length == 1 %}
-                    <div class="empty-chart">
-                        目前只有一筆體重紀錄，尚無法形成趨勢。<br>
-                        最近體重：{{ weight_trend_data[0].weight }} kg
-                    </div>
-                {% else %}
-                    <div class="empty-chart">
-                        目前沒有可用的體重紀錄。
-                    </div>
-                {% endif %}
-            </div>
-
-            <div class="trend-card">
-                <h2>健康狀態分析</h2>
-                <p class="muted">
-                    依照健康紀錄中的食慾與活動力欄位，統計寵物近期健康狀態。
-                </p>
-
-                <div class="sub-chart-grid">
-                    <div class="sub-chart-card">
-                        <h3>食慾狀態</h3>
-
-                        {% if appetite_chart_data %}
-                            <div class="chart-canvas-wrap medium">
-                                <canvas id="appetiteChart"></canvas>
+                            <div>
+                                <h2>{{ item.pet.name }}</h2>
+                                <p>
+                                    {{ item.pet.species }}
+                                    {% if item.pet.breed %}
+                                        ｜{{ item.pet.breed }}
+                                    {% endif %}
+                                </p>
                             </div>
-                        {% else %}
-                            <div class="empty-chart small">
-                                目前沒有食慾紀錄。
+                        </div>
+
+                        <div class="pet-summary-right">
+                            <span class="record-count">
+                                健康 {{ item.health_record_count }} 筆｜
+                                就醫 {{ item.medical_record_count }} 筆｜
+                                提醒 {{ item.reminder_count }} 筆
+                            </span>
+                            <span class="latest-date">
+                                照護總數：{{ item.care_record_count }} 筆
+                            </span>
+                            <span class="open-hint">點擊展開 / 收合</span>
+                        </div>
+                    </summary>
+
+                    <div class="accordion-body">
+
+                        <div class="pet-overview-grid">
+                            <div class="mini-summary-card">
+                                <span>健康紀錄</span>
+                                <strong>{{ item.health_record_count }}</strong>
+                                <small>筆</small>
                             </div>
-                        {% endif %}
+
+                            <div class="mini-summary-card">
+                                <span>就醫紀錄</span>
+                                <strong>{{ item.medical_record_count }}</strong>
+                                <small>筆</small>
+                            </div>
+
+                            <div class="mini-summary-card">
+                                <span>提醒事項</span>
+                                <strong>{{ item.reminder_count }}</strong>
+                                <small>筆</small>
+                            </div>
+
+                            <div class="mini-summary-card">
+                                <span>照護總數</span>
+                                <strong>{{ item.care_record_count }}</strong>
+                                <small>筆</small>
+                            </div>
+                        </div>
+
+                        <div class="trend-card">
+                            <h3>{{ item.pet.name }} 的體重趨勢</h3>
+                            <p class="muted">
+                                此圖只顯示 {{ item.pet.name }} 的體重紀錄，不會混入其他寵物資料。
+                            </p>
+
+                            <div class="chart-empty-message" id="weightEmpty{{ item.pet.id }}">
+                                目前沒有足夠的體重紀錄形成趨勢。
+                            </div>
+
+                            <div class="chart-canvas-wrap large" id="weightWrap{{ item.pet.id }}" style="display:none;">
+                                <canvas id="weightChart{{ item.pet.id }}"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="trend-card">
+                            <h3>{{ item.pet.name }} 的健康狀態分析</h3>
+                            <p class="muted">
+                                依照健康紀錄中的食慾與活動力欄位進行統計。
+                            </p>
+
+                            <div class="sub-chart-grid">
+                                <div class="sub-chart-card">
+                                    <h4>食慾狀態</h4>
+
+                                    <div class="chart-empty-message small" id="appetiteEmpty{{ item.pet.id }}">
+                                        目前沒有食慾紀錄。
+                                    </div>
+
+                                    <div class="chart-canvas-wrap medium" id="appetiteWrap{{ item.pet.id }}" style="display:none;">
+                                        <canvas id="appetiteChart{{ item.pet.id }}"></canvas>
+                                    </div>
+                                </div>
+
+                                <div class="sub-chart-card">
+                                    <h4>活動力狀態</h4>
+
+                                    <div class="chart-empty-message small" id="activityEmpty{{ item.pet.id }}">
+                                        目前沒有活動力紀錄。
+                                    </div>
+
+                                    <div class="chart-canvas-wrap medium" id="activityWrap{{ item.pet.id }}" style="display:none;">
+                                        <canvas id="activityChart{{ item.pet.id }}"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="trend-card">
+                            <h3>{{ item.pet.name }} 的每月照護紀錄統計</h3>
+                            <p class="muted">
+                                以月份統計健康紀錄、就醫紀錄與提醒事項。
+                            </p>
+
+                            <div class="chart-empty-message" id="careEmpty{{ item.pet.id }}">
+                                目前沒有照護紀錄資料。
+                            </div>
+
+                            <div class="chart-canvas-wrap large" id="careWrap{{ item.pet.id }}" style="display:none;">
+                                <canvas id="careChart{{ item.pet.id }}"></canvas>
+                            </div>
+                        </div>
+
                     </div>
-
-                    <div class="sub-chart-card">
-                        <h3>活動力狀態</h3>
-
-                        {% if activity_chart_data %}
-                            <div class="chart-canvas-wrap medium">
-                                <canvas id="activityChart"></canvas>
-                            </div>
-                        {% else %}
-                            <div class="empty-chart small">
-                                目前沒有活動力紀錄。
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-
+                </details>
+            {% endfor %}
         </div>
-
-        <div class="side-column">
-
-            <div class="side-card">
-                <h2>健康紀錄數量</h2>
-                <p class="muted">
-                    統計目前已建立的健康紀錄筆數，協助了解照護紀錄是否完整。
-                </p>
-
-                <div class="number-panel">
-                    <strong>{{ total_health_records }}</strong>
-                    <span>目前健康紀錄總數</span>
-
-                    <div class="mini-row">
-                        <span>就醫紀錄</span>
-                        <b>{{ total_medical_records }}</b>
-                    </div>
-
-                    <div class="mini-row">
-                        <span>提醒事項</span>
-                        <b>{{ total_reminders }}</b>
-                    </div>
-
-                    <div class="mini-row">
-                        <span>照護總數</span>
-                        <b>{{ total_care_records }}</b>
-                    </div>
-                </div>
-            </div>
-
-            <div class="side-card">
-                <h2>每月照護紀錄統計</h2>
-                <p class="muted">
-                    以月份統計健康紀錄、就醫紀錄與提醒事項，方便查看每月照護次數。
-                </p>
-
-                {% if care_trend_data %}
-                    <div class="chart-canvas-wrap side-chart">
-                        <canvas id="careTrendChart"></canvas>
-                    </div>
-                {% else %}
-                    <div class="empty-chart small">
-                        目前沒有照護紀錄資料。
-                    </div>
-                {% endif %}
-            </div>
-
+    {% else %}
+        <div class="trend-card">
+            <p class="muted">目前尚未建立寵物資料，因此沒有健康趨勢可以顯示。</p>
+            <a class="btn" href="{{ url_for('add_pet') }}">新增寵物</a>
         </div>
-
-    </div>
+    {% endif %}
 
     <div class="bottom-actions">
         <a class="btn" href="{{ url_for('dashboard') }}">返回 Dashboard</a>
@@ -159,169 +182,200 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-    const weightTrendData = {{ weight_trend_data | tojson }};
-    const appetiteChartData = {{ appetite_chart_data | tojson }};
-    const activityChartData = {{ activity_chart_data | tojson }};
-    const careTrendData = {{ care_trend_data | tojson }};
+    const petTrendChartData = {{ pet_trend_chart_data | tojson }};
 
-    if (document.getElementById("weightTrendChart") && weightTrendData.length >= 2) {
-        new Chart(document.getElementById("weightTrendChart"), {
-            type: "line",
-            data: {
-                labels: weightTrendData.map(item => {
-                    if (item.pet_name) {
-                        return item.date + " " + item.pet_name;
-                    }
-                    return item.date;
-                }),
-                datasets: [{
-                    label: "體重 kg",
-                    data: weightTrendData.map(item => item.weight),
-                    borderWidth: 3,
-                    tension: 0.35,
-                    pointRadius: 5,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: true
-                    }
+    petTrendChartData.forEach(function (item) {
+        const petId = item.pet_id;
+
+        const weightData = item.weight_trend_data || [];
+        const appetiteData = item.appetite_chart_data || [];
+        const activityData = item.activity_chart_data || [];
+        const careData = item.care_trend_data || [];
+
+        const weightEmpty = document.getElementById("weightEmpty" + petId);
+        const weightWrap = document.getElementById("weightWrap" + petId);
+        const weightCanvas = document.getElementById("weightChart" + petId);
+
+        if (weightCanvas && weightData.length >= 2) {
+            weightEmpty.style.display = "none";
+            weightWrap.style.display = "block";
+
+            new Chart(weightCanvas, {
+                type: "line",
+                data: {
+                    labels: weightData.map(row => row.date),
+                    datasets: [{
+                        label: item.pet_name + " 體重 kg",
+                        data: weightData.map(row => row.weight),
+                        borderWidth: 3,
+                        tension: 0.35,
+                        pointRadius: 5,
+                        fill: true
+                    }]
                 },
-                scales: {
-                    y: {
-                        title: {
-                            display: true,
-                            text: "體重 kg"
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true
                         }
                     },
-                    x: {
-                        ticks: {
-                            maxRotation: 0,
-                            autoSkip: true,
-                            maxTicksLimit: 6
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: "體重 kg"
+                            }
                         },
-                        title: {
-                            display: true,
-                            text: "日期"
+                        x: {
+                            ticks: {
+                                maxRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: 6
+                            },
+                            title: {
+                                display: true,
+                                text: "日期"
+                            }
                         }
                     }
                 }
-            }
-        });
-    }
+            });
+        } else if (weightData.length === 1) {
+            weightEmpty.innerHTML = "目前只有一筆體重紀錄，尚無法形成趨勢。<br>最近體重：" + weightData[0].weight + " kg";
+        }
 
-    if (document.getElementById("appetiteChart") && appetiteChartData.length > 0) {
-        new Chart(document.getElementById("appetiteChart"), {
-            type: "doughnut",
-            data: {
-                labels: appetiteChartData.map(item => item.label),
-                datasets: [{
-                    label: "食慾狀態",
-                    data: appetiteChartData.map(item => item.value),
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: "bottom"
-                    }
-                }
-            }
-        });
-    }
+        const appetiteEmpty = document.getElementById("appetiteEmpty" + petId);
+        const appetiteWrap = document.getElementById("appetiteWrap" + petId);
+        const appetiteCanvas = document.getElementById("appetiteChart" + petId);
 
-    if (document.getElementById("activityChart") && activityChartData.length > 0) {
-        new Chart(document.getElementById("activityChart"), {
-            type: "bar",
-            data: {
-                labels: activityChartData.map(item => item.label),
-                datasets: [{
-                    label: "活動力狀態",
-                    data: activityChartData.map(item => item.value),
-                    borderWidth: 1,
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
+        if (appetiteCanvas && appetiteData.length > 0) {
+            appetiteEmpty.style.display = "none";
+            appetiteWrap.style.display = "block";
+
+            new Chart(appetiteCanvas, {
+                type: "doughnut",
+                data: {
+                    labels: appetiteData.map(row => row.label),
+                    datasets: [{
+                        label: "食慾狀態",
+                        data: appetiteData.map(row => row.value),
+                        borderWidth: 1
+                    }]
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            precision: 0
-                        },
-                        title: {
-                            display: true,
-                            text: "筆數"
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: "bottom"
                         }
                     }
                 }
-            }
-        });
-    }
+            });
+        }
 
-    if (document.getElementById("careTrendChart") && careTrendData.length > 0) {
-        new Chart(document.getElementById("careTrendChart"), {
-            type: "bar",
-            data: {
-                labels: careTrendData.map(item => item.month),
-                datasets: [
-                    {
-                        label: "健康紀錄",
-                        data: careTrendData.map(item => item.health),
+        const activityEmpty = document.getElementById("activityEmpty" + petId);
+        const activityWrap = document.getElementById("activityWrap" + petId);
+        const activityCanvas = document.getElementById("activityChart" + petId);
+
+        if (activityCanvas && activityData.length > 0) {
+            activityEmpty.style.display = "none";
+            activityWrap.style.display = "block";
+
+            new Chart(activityCanvas, {
+                type: "bar",
+                data: {
+                    labels: activityData.map(row => row.label),
+                    datasets: [{
+                        label: "活動力狀態",
+                        data: activityData.map(row => row.value),
                         borderWidth: 1,
                         borderRadius: 8
-                    },
-                    {
-                        label: "就醫紀錄",
-                        data: careTrendData.map(item => item.medical),
-                        borderWidth: 1,
-                        borderRadius: 8
-                    },
-                    {
-                        label: "提醒事項",
-                        data: careTrendData.map(item => item.reminder),
-                        borderWidth: 1,
-                        borderRadius: 8
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: "bottom"
-                    }
+                    }]
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            precision: 0
-                        },
-                        title: {
-                            display: true,
-                            text: "筆數"
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            },
+                            title: {
+                                display: true,
+                                text: "筆數"
+                            }
                         }
                     }
                 }
-            }
-        });
-    }
+            });
+        }
+
+        const careEmpty = document.getElementById("careEmpty" + petId);
+        const careWrap = document.getElementById("careWrap" + petId);
+        const careCanvas = document.getElementById("careChart" + petId);
+
+        if (careCanvas && careData.length > 0) {
+            careEmpty.style.display = "none";
+            careWrap.style.display = "block";
+
+            new Chart(careCanvas, {
+                type: "bar",
+                data: {
+                    labels: careData.map(row => row.month),
+                    datasets: [
+                        {
+                            label: "健康紀錄",
+                            data: careData.map(row => row.health),
+                            borderWidth: 1,
+                            borderRadius: 8
+                        },
+                        {
+                            label: "就醫紀錄",
+                            data: careData.map(row => row.medical),
+                            borderWidth: 1,
+                            borderRadius: 8
+                        },
+                        {
+                            label: "提醒事項",
+                            data: careData.map(row => row.reminder),
+                            borderWidth: 1,
+                            borderRadius: 8
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: "bottom"
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            },
+                            title: {
+                                display: true,
+                                text: "筆數"
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
 </script>
 
 <style>
@@ -371,32 +425,141 @@
         font-size: 0.95rem;
     }
 
-    .trend-layout {
-        display: grid;
-        grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
-        gap: 22px;
-        align-items: start;
-        width: 100%;
-        max-width: 100%;
-        box-sizing: border-box;
-        overflow: hidden;
+    .pet-trend-list {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
     }
 
-    .main-column,
-    .side-column {
-        min-width: 0;
-        width: 100%;
-        max-width: 100%;
-        box-sizing: border-box;
-    }
-
-    .trend-card,
-    .side-card {
+    .pet-trend-accordion {
         background: #ffffff;
         border-radius: 22px;
-        padding: 28px;
-        margin-bottom: 22px;
         box-shadow: 0 8px 26px rgba(0, 0, 0, 0.04);
+        overflow: hidden;
+        border: 1px solid #f0f0f0;
+    }
+
+    .pet-trend-accordion summary {
+        list-style: none;
+        cursor: pointer;
+        padding: 22px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 18px;
+        background: #ffffff;
+    }
+
+    .pet-trend-accordion summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .pet-trend-accordion[open] summary {
+        background: #fffaf4;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .pet-summary-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .pet-summary-left h2 {
+        color: #b66b36;
+        font-size: 1.25rem;
+        margin: 0 0 6px;
+    }
+
+    .pet-summary-left p {
+        margin: 0;
+        color: #777777;
+        font-size: 0.92rem;
+    }
+
+    .pet-thumb,
+    .pet-thumb-placeholder {
+        width: 72px;
+        height: 72px;
+        border-radius: 18px;
+        object-fit: cover;
+        object-position: center;
+        background: #f6f8ff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 34px;
+        flex-shrink: 0;
+    }
+
+    .pet-summary-right {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        align-items: flex-end;
+        text-align: right;
+    }
+
+    .record-count {
+        color: #b66b36;
+        font-weight: 700;
+    }
+
+    .latest-date {
+        color: #777777;
+        font-size: 0.86rem;
+    }
+
+    .open-hint {
+        color: #8faeee;
+        font-size: 0.84rem;
+        font-weight: 700;
+    }
+
+    .accordion-body {
+        padding: 24px;
+        background: #ffffff;
+    }
+
+    .pet-overview-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+        margin-bottom: 22px;
+    }
+
+    .mini-summary-card {
+        background: #f6f8ff;
+        border-radius: 18px;
+        padding: 20px;
+        text-align: center;
+        box-sizing: border-box;
+        min-width: 0;
+    }
+
+    .mini-summary-card span {
+        display: block;
+        color: #666666;
+        margin-bottom: 8px;
+    }
+
+    .mini-summary-card strong {
+        display: block;
+        font-size: 2rem;
+        color: #b66b36;
+        margin-bottom: 4px;
+    }
+
+    .mini-summary-card small {
+        color: #777777;
+    }
+
+    .trend-card {
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 24px;
+        margin-bottom: 22px;
+        border: 1px solid #f0f0f0;
         width: 100%;
         max-width: 100%;
         min-width: 0;
@@ -404,11 +567,17 @@
         overflow: hidden;
     }
 
-    .trend-card h2,
-    .side-card h2 {
+    .trend-card h3 {
         color: #b66b36;
         font-size: 1.12rem;
-        margin-bottom: 14px;
+        margin-bottom: 12px;
+    }
+
+    .trend-card h4 {
+        color: #b66b36;
+        text-align: center;
+        font-size: 0.98rem;
+        margin-bottom: 12px;
     }
 
     .sub-chart-grid {
@@ -416,9 +585,6 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 18px;
         margin-top: 20px;
-        width: 100%;
-        max-width: 100%;
-        box-sizing: border-box;
     }
 
     .sub-chart-card {
@@ -430,13 +596,6 @@
         min-width: 0;
         box-sizing: border-box;
         overflow: hidden;
-    }
-
-    .sub-chart-card h3 {
-        text-align: center;
-        color: #b66b36;
-        font-size: 0.95rem;
-        margin-bottom: 12px;
     }
 
     .chart-canvas-wrap {
@@ -459,13 +618,6 @@
         height: 260px;
     }
 
-    .chart-canvas-wrap.side-chart {
-        height: 260px;
-        background: #f6f8ff;
-        border-radius: 18px;
-        padding: 16px;
-    }
-
     .chart-canvas-wrap canvas {
         width: 100% !important;
         height: 100% !important;
@@ -473,43 +625,7 @@
         display: block;
     }
 
-    .number-panel {
-        background: #f6f8ff;
-        border-radius: 18px;
-        padding: 28px;
-        text-align: center;
-        margin-top: 20px;
-    }
-
-    .number-panel > strong {
-        display: block;
-        color: #b66b36;
-        font-size: 2.6rem;
-        margin-bottom: 8px;
-    }
-
-    .number-panel > span {
-        display: block;
-        color: #666666;
-        margin-bottom: 20px;
-    }
-
-    .mini-row {
-        display: flex;
-        justify-content: space-between;
-        background: #ffffff;
-        border-radius: 12px;
-        padding: 10px 14px;
-        margin-bottom: 8px;
-        color: #555555;
-        font-size: 0.9rem;
-    }
-
-    .mini-row b {
-        color: #b66b36;
-    }
-
-    .empty-chart {
+    .chart-empty-message {
         min-height: 220px;
         display: flex;
         align-items: center;
@@ -523,7 +639,7 @@
         box-sizing: border-box;
     }
 
-    .empty-chart.small {
+    .chart-empty-message.small {
         min-height: 180px;
     }
 
@@ -532,11 +648,8 @@
     }
 
     @media (max-width: 1000px) {
-        .trend-layout {
-            grid-template-columns: 1fr;
-        }
-
-        .summary-grid {
+        .summary-grid,
+        .pet-overview-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
     }
@@ -547,18 +660,31 @@
         }
 
         .summary-grid,
+        .pet-overview-grid,
         .sub-chart-grid {
             grid-template-columns: 1fr;
         }
 
-        .trend-card,
-        .side-card {
-            padding: 22px;
+        .pet-trend-accordion summary {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .pet-summary-right {
+            align-items: flex-start;
+            text-align: left;
+        }
+
+        .accordion-body {
+            padding: 18px;
+        }
+
+        .trend-card {
+            padding: 20px;
         }
 
         .chart-canvas-wrap.large,
-        .chart-canvas-wrap.medium,
-        .chart-canvas-wrap.side-chart {
+        .chart-canvas-wrap.medium {
             height: 260px;
         }
     }
