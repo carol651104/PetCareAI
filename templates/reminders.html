@@ -1,45 +1,409 @@
 {% extends "base.html" %}
 
-{% block title %}提醒事項{% endblock %}
+{% block title %}提醒事項管理{% endblock %}
 
 {% block content %}
 
-<h1>提醒事項</h1>
-<p class="muted">查看疫苗、驅蟲、健檢、回診與用藥提醒。</p>
+<h1>提醒事項管理</h1>
+<p class="muted">
+    依照寵物分組查看疫苗、驅蟲、健檢、回診與用藥提醒，並可切換完成狀態。
+</p>
 
-{% if reminders %}
-    {% for reminder in reminders %}
-        <div class="card">
-            <h3>{{ reminder.pet.name }}｜{{ reminder.reminder_type }}</h3>
+<div class="reminder-summary-card">
+    <div>
+        <span class="summary-label">寵物數量</span>
+        <strong>{{ pets|length }}</strong>
+    </div>
+    <div>
+        <span class="summary-label">提醒總數</span>
+        <strong>{{ total_records }}</strong>
+    </div>
+    <div>
+        <span class="summary-label">待完成</span>
+        <strong>{{ total_pending_reminders }}</strong>
+    </div>
+    <div>
+        <span class="summary-label">已完成</span>
+        <strong>{{ total_done_reminders }}</strong>
+    </div>
+</div>
 
-            <span class="badge {% if reminder.is_done %}done{% else %}pending{% endif %}">
-                {% if reminder.is_done %}已完成{% else %}待完成{% endif %}
-            </span>
+{% if pet_reminder_data %}
+    <div class="accordion-list">
+        {% for item in pet_reminder_data %}
+            <details class="pet-accordion" {% if loop.first %}open{% endif %}>
+                <summary>
+                    <div class="pet-summary-left">
+                        {% if item.pet.photo_url %}
+                            <img src="{{ item.pet.photo_url }}" alt="{{ item.pet.name }}" class="pet-thumb">
+                        {% else %}
+                            <div class="pet-thumb-placeholder">🐾</div>
+                        {% endif %}
 
-            <p>
-                日期：{{ reminder.reminder_date }}<br>
-                備註：{{ reminder.note or "無" }}
-            </p>
+                        <div>
+                            <h2>{{ item.pet.name }}</h2>
+                            <p>
+                                {{ item.pet.species }}
+                                {% if item.pet.breed %}
+                                    ｜{{ item.pet.breed }}
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
 
-            <div class="record-actions">
-                <form method="POST" action="/reminder/{{ reminder.id }}/done">
-                    <button class="btn btn-green" type="submit">切換完成狀態</button>
-                </form>
+                    <div class="pet-summary-right">
+                        <span class="record-count">{{ item.record_count }} 筆提醒</span>
+                        <span class="latest-date">待完成 {{ item.pending_count }} 筆｜已完成 {{ item.done_count }} 筆</span>
+                        {% if item.latest_record %}
+                            <span class="latest-date">最近提醒：{{ item.latest_record.reminder_date }}</span>
+                        {% else %}
+                            <span class="latest-date">尚無提醒</span>
+                        {% endif %}
+                        <span class="open-hint">點擊展開</span>
+                    </div>
+                </summary>
 
-                <a class="btn" href="/pets/{{ reminder.pet.id }}">查看寵物</a>
+                <div class="accordion-body">
+                    <div class="pet-actions">
+                        <a class="btn" href="{{ url_for('pet_detail', pet_id=item.pet.id) }}">查看寵物</a>
+                        <a class="btn btn-green" href="{{ url_for('add_reminder', pet_id=item.pet.id) }}">新增提醒</a>
+                    </div>
 
-                <a class="btn btn-brown" href="/reminder/{{ reminder.id }}/edit">修改</a>
+                    {% if item.records %}
+                        <div class="record-list">
+                            {% for reminder in item.records %}
+                                <div class="reminder-record-card {% if reminder.is_done %}done-card{% else %}pending-card{% endif %}">
+                                    <div class="record-main">
+                                        <div class="record-date-box">
+                                            <span class="date-label">提醒日期</span>
+                                            <strong>{{ reminder.reminder_date }}</strong>
+                                        </div>
 
-                <form method="POST" action="/reminder/{{ reminder.id }}/delete" onsubmit="return confirm('確定刪除提醒？');">
-                    <button class="btn btn-danger" type="submit">刪除</button>
-                </form>
-            </div>
-        </div>
-    {% endfor %}
+                                        <div class="record-info-grid">
+                                            <div>
+                                                <span>提醒類型</span>
+                                                <strong>{{ reminder.reminder_type }}</strong>
+                                            </div>
+                                            <div>
+                                                <span>完成狀態</span>
+                                                {% if reminder.is_done %}
+                                                    <strong class="status-done">已完成</strong>
+                                                {% else %}
+                                                    <strong class="status-pending">待完成</strong>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <span>備註</span>
+                                                <strong>{{ reminder.note or "無" }}</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="record-actions">
+                                        <form method="POST" action="{{ url_for('toggle_reminder_done', reminder_id=reminder.id) }}">
+                                            {% if reminder.is_done %}
+                                                <button class="btn btn-green" type="submit">改為待完成</button>
+                                            {% else %}
+                                                <button class="btn btn-green" type="submit">標記完成</button>
+                                            {% endif %}
+                                        </form>
+
+                                        <a class="btn btn-brown" href="{{ url_for('edit_reminder', reminder_id=reminder.id) }}">修改</a>
+
+                                        <form method="POST" action="{{ url_for('delete_reminder', reminder_id=reminder.id) }}" onsubmit="return confirm('確定刪除這筆提醒？');">
+                                            <button class="btn btn-danger" type="submit">刪除</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-record-box">
+                            <p>目前這隻寵物尚未建立提醒事項。</p>
+                            <a class="btn btn-green" href="{{ url_for('add_reminder', pet_id=item.pet.id) }}">新增第一筆提醒</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </details>
+        {% endfor %}
+    </div>
 {% else %}
     <div class="card">
-        <p class="muted">目前沒有提醒事項。</p>
+        <p class="muted">目前尚未建立寵物資料，因此沒有提醒事項可以顯示。</p>
+        <a class="btn" href="{{ url_for('add_pet') }}">新增寵物</a>
     </div>
 {% endif %}
+
+<div class="card-actions bottom-actions">
+    <a class="btn btn-brown" href="{{ url_for('dashboard') }}">返回 Dashboard</a>
+    <a class="btn" href="{{ url_for('pets') }}">返回寵物列表</a>
+</div>
+
+<style>
+    .reminder-summary-card {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin: 22px 0;
+    }
+
+    .reminder-summary-card > div {
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 22px;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.045);
+    }
+
+    .summary-label {
+        display: block;
+        color: #777777;
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+    }
+
+    .reminder-summary-card strong {
+        display: block;
+        color: #b66b36;
+        font-size: 2rem;
+    }
+
+    .accordion-list {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    .pet-accordion {
+        background: #ffffff;
+        border-radius: 22px;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.045);
+        overflow: hidden;
+    }
+
+    .pet-accordion summary {
+        list-style: none;
+        cursor: pointer;
+        padding: 22px;
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        align-items: center;
+        background: #ffffff;
+    }
+
+    .pet-accordion summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .pet-accordion[open] summary {
+        border-bottom: 1px solid #f0f0f0;
+        background: #fffaf4;
+    }
+
+    .pet-summary-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .pet-summary-left h2 {
+        margin: 0 0 6px;
+        color: #b66b36;
+        font-size: 1.25rem;
+    }
+
+    .pet-summary-left p {
+        margin: 0;
+        color: #777777;
+        font-size: 0.92rem;
+    }
+
+    .pet-thumb,
+    .pet-thumb-placeholder {
+        width: 72px;
+        height: 72px;
+        border-radius: 18px;
+        object-fit: cover;
+        object-position: center;
+        background: #f6f8ff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 34px;
+        flex-shrink: 0;
+    }
+
+    .pet-summary-right {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        align-items: flex-end;
+        text-align: right;
+    }
+
+    .record-count {
+        color: #b66b36;
+        font-weight: 700;
+    }
+
+    .latest-date {
+        color: #777777;
+        font-size: 0.86rem;
+    }
+
+    .open-hint {
+        color: #8faeee;
+        font-size: 0.84rem;
+        font-weight: 700;
+    }
+
+    .accordion-body {
+        padding: 22px;
+        background: #ffffff;
+    }
+
+    .pet-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .record-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .reminder-record-card {
+        background: #f6f8ff;
+        border-radius: 18px;
+        padding: 18px;
+    }
+
+    .pending-card {
+        border-left: 6px solid #c67635;
+    }
+
+    .done-card {
+        border-left: 6px solid #7abf8a;
+        opacity: 0.9;
+    }
+
+    .record-main {
+        display: grid;
+        grid-template-columns: 160px 1fr;
+        gap: 18px;
+        align-items: start;
+    }
+
+    .record-date-box {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 16px;
+    }
+
+    .date-label {
+        display: block;
+        color: #777777;
+        font-size: 0.84rem;
+        margin-bottom: 6px;
+    }
+
+    .record-date-box strong {
+        color: #b66b36;
+        font-size: 1rem;
+    }
+
+    .record-info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+
+    .record-info-grid > div {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 14px;
+    }
+
+    .record-info-grid span {
+        display: block;
+        color: #777777;
+        font-size: 0.82rem;
+        margin-bottom: 6px;
+    }
+
+    .record-info-grid strong {
+        color: #333333;
+        font-size: 0.94rem;
+        word-break: break-word;
+    }
+
+    .status-pending {
+        color: #c67635 !important;
+    }
+
+    .status-done {
+        color: #4e9d63 !important;
+    }
+
+    .record-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 14px;
+    }
+
+    .record-actions form {
+        margin: 0;
+    }
+
+    .empty-record-box {
+        background: #f6f8ff;
+        border-radius: 18px;
+        padding: 24px;
+        text-align: center;
+        color: #777777;
+    }
+
+    .bottom-actions {
+        margin-top: 24px;
+    }
+
+    @media (max-width: 900px) {
+        .reminder-summary-card {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .pet-accordion summary {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .pet-summary-right {
+            align-items: flex-start;
+            text-align: left;
+        }
+
+        .record-main {
+            grid-template-columns: 1fr;
+        }
+
+        .record-info-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 560px) {
+        .reminder-summary-card {
+            grid-template-columns: 1fr;
+        }
+
+        .pet-summary-left {
+            align-items: flex-start;
+        }
+    }
+</style>
 
 {% endblock %}
