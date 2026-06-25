@@ -5,29 +5,390 @@
 {% block content %}
 
 <h1>健康紀錄管理</h1>
-<p class="muted">查看目前登入帳號下所有寵物的健康紀錄。</p>
+<p class="muted">
+    依照寵物分組查看健康紀錄，點開寵物卡片即可查看該寵物的完整紀錄。
+</p>
 
-{% if records %}
-    {% for record in records %}
-        <div class="card">
-            <h3>{{ record.pet.name }}｜{{ record.record_date }}</h3>
-            <p>
-                體重：{{ record.weight or "未填寫" }} kg<br>
-                食慾：{{ record.appetite or "未填寫" }}<br>
-                活動量：{{ record.activity or "未填寫" }}<br>
-                症狀：{{ record.symptoms or "無" }}<br>
-                用藥：{{ record.medication or "無" }}<br>
-                備註：{{ record.note or "無" }}
-            </p>
+<div class="health-summary-card">
+    <div>
+        <span class="summary-label">寵物數量</span>
+        <strong>{{ pets|length }}</strong>
+    </div>
+    <div>
+        <span class="summary-label">健康紀錄總數</span>
+        <strong>{{ total_records }}</strong>
+    </div>
+</div>
 
-            <a class="btn" href="/pets/{{ record.pet.id }}">查看寵物</a>
-            <a class="btn btn-brown" href="/health/{{ record.id }}/edit">修改</a>
-        </div>
-    {% endfor %}
+{% if pet_records_data %}
+    <div class="accordion-list">
+        {% for item in pet_records_data %}
+            <details class="pet-accordion" {% if loop.first %}open{% endif %}>
+                <summary>
+                    <div class="pet-summary-left">
+                        {% if item.pet.photo_url %}
+                            <img src="{{ item.pet.photo_url }}" alt="{{ item.pet.name }}" class="pet-thumb">
+                        {% else %}
+                            <div class="pet-thumb-placeholder">🐾</div>
+                        {% endif %}
+
+                        <div>
+                            <h2>{{ item.pet.name }}</h2>
+                            <p>
+                                {{ item.pet.species }}
+                                {% if item.pet.breed %}
+                                    ｜{{ item.pet.breed }}
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="pet-summary-right">
+                        <span class="record-count">{{ item.record_count }} 筆紀錄</span>
+                        {% if item.latest_record %}
+                            <span class="latest-date">最近：{{ item.latest_record.record_date }}</span>
+                        {% else %}
+                            <span class="latest-date">尚無紀錄</span>
+                        {% endif %}
+                        <span class="open-hint">點擊展開</span>
+                    </div>
+                </summary>
+
+                <div class="accordion-body">
+                    <div class="pet-actions">
+                        <a class="btn" href="/pets/{{ item.pet.id }}">查看寵物</a>
+                        <a class="btn btn-green" href="/pets/{{ item.pet.id }}/health/add">新增健康紀錄</a>
+                    </div>
+
+                    {% if item.records %}
+                        <div class="record-list">
+                            {% for record in item.records %}
+                                <div class="health-record-card">
+                                    <div class="record-main">
+                                        <div class="record-date-box">
+                                            <span class="date-label">日期</span>
+                                            <strong>{{ record.record_date }}</strong>
+                                        </div>
+
+                                        <div class="record-info-grid">
+                                            <div>
+                                                <span>體重</span>
+                                                <strong>{{ record.weight or "未填寫" }} kg</strong>
+                                            </div>
+                                            <div>
+                                                <span>食慾</span>
+                                                <strong>{{ record.appetite or "未填寫" }}</strong>
+                                            </div>
+                                            <div>
+                                                <span>活動量</span>
+                                                <strong>{{ record.activity or "未填寫" }}</strong>
+                                            </div>
+                                            <div>
+                                                <span>用藥</span>
+                                                <strong>{{ record.medication or "無" }}</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="record-detail">
+                                        <p>
+                                            <strong>症狀：</strong>{{ record.symptoms or "無" }}<br>
+                                            <strong>備註：</strong>{{ record.note or "無" }}
+                                        </p>
+                                    </div>
+
+                                    <div class="record-actions">
+                                        <a class="btn btn-brown" href="/health/{{ record.id }}/edit">修改</a>
+
+                                        <form method="POST" action="/health/{{ record.id }}/delete" onsubmit="return confirm('確定刪除這筆健康紀錄？');">
+                                            <button class="btn btn-danger" type="submit">刪除</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-record-box">
+                            <p>目前這隻寵物尚未建立健康紀錄。</p>
+                            <a class="btn btn-green" href="/pets/{{ item.pet.id }}/health/add">新增第一筆健康紀錄</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </details>
+        {% endfor %}
+    </div>
 {% else %}
     <div class="card">
-        <p class="muted">目前尚未建立任何健康紀錄。</p>
+        <p class="muted">目前尚未建立寵物資料，因此沒有健康紀錄可以顯示。</p>
+        <a class="btn" href="/pets/add">新增寵物</a>
     </div>
 {% endif %}
+
+<div class="card-actions bottom-actions">
+    <a class="btn btn-brown" href="/dashboard">返回 Dashboard</a>
+    <a class="btn" href="/pets">返回寵物列表</a>
+</div>
+
+<style>
+    .health-summary-card {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin: 22px 0;
+    }
+
+    .health-summary-card > div {
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 22px;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.045);
+    }
+
+    .summary-label {
+        display: block;
+        color: #777777;
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+    }
+
+    .health-summary-card strong {
+        display: block;
+        color: #b66b36;
+        font-size: 2rem;
+    }
+
+    .accordion-list {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    .pet-accordion {
+        background: #ffffff;
+        border-radius: 22px;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.045);
+        overflow: hidden;
+    }
+
+    .pet-accordion summary {
+        list-style: none;
+        cursor: pointer;
+        padding: 22px;
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        align-items: center;
+        background: #ffffff;
+    }
+
+    .pet-accordion summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .pet-accordion[open] summary {
+        border-bottom: 1px solid #f0f0f0;
+        background: #fffaf4;
+    }
+
+    .pet-summary-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .pet-summary-left h2 {
+        margin: 0 0 6px;
+        color: #b66b36;
+        font-size: 1.25rem;
+    }
+
+    .pet-summary-left p {
+        margin: 0;
+        color: #777777;
+        font-size: 0.92rem;
+    }
+
+    .pet-thumb,
+    .pet-thumb-placeholder {
+        width: 72px;
+        height: 72px;
+        border-radius: 18px;
+        object-fit: cover;
+        object-position: center;
+        background: #f6f8ff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 34px;
+        flex-shrink: 0;
+    }
+
+    .pet-summary-right {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        align-items: flex-end;
+        text-align: right;
+    }
+
+    .record-count {
+        color: #b66b36;
+        font-weight: 700;
+    }
+
+    .latest-date {
+        color: #777777;
+        font-size: 0.86rem;
+    }
+
+    .open-hint {
+        color: #8faeee;
+        font-size: 0.84rem;
+        font-weight: 700;
+    }
+
+    .accordion-body {
+        padding: 22px;
+        background: #ffffff;
+    }
+
+    .pet-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .record-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .health-record-card {
+        background: #f6f8ff;
+        border-radius: 18px;
+        padding: 18px;
+    }
+
+    .record-main {
+        display: grid;
+        grid-template-columns: 160px 1fr;
+        gap: 18px;
+        align-items: start;
+    }
+
+    .record-date-box {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 16px;
+    }
+
+    .date-label {
+        display: block;
+        color: #777777;
+        font-size: 0.84rem;
+        margin-bottom: 6px;
+    }
+
+    .record-date-box strong {
+        color: #b66b36;
+        font-size: 1rem;
+    }
+
+    .record-info-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+    }
+
+    .record-info-grid > div {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 14px;
+    }
+
+    .record-info-grid span {
+        display: block;
+        color: #777777;
+        font-size: 0.82rem;
+        margin-bottom: 6px;
+    }
+
+    .record-info-grid strong {
+        color: #333333;
+        font-size: 0.94rem;
+        word-break: break-word;
+    }
+
+    .record-detail {
+        margin-top: 14px;
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 14px;
+        line-height: 1.7;
+    }
+
+    .record-detail p {
+        margin: 0;
+    }
+
+    .record-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 14px;
+    }
+
+    .record-actions form {
+        margin: 0;
+    }
+
+    .empty-record-box {
+        background: #f6f8ff;
+        border-radius: 18px;
+        padding: 24px;
+        text-align: center;
+        color: #777777;
+    }
+
+    .bottom-actions {
+        margin-top: 24px;
+    }
+
+    @media (max-width: 900px) {
+        .health-summary-card {
+            grid-template-columns: 1fr;
+        }
+
+        .pet-accordion summary {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .pet-summary-right {
+            align-items: flex-start;
+            text-align: left;
+        }
+
+        .record-main {
+            grid-template-columns: 1fr;
+        }
+
+        .record-info-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 560px) {
+        .record-info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .pet-summary-left {
+            align-items: flex-start;
+        }
+    }
+</style>
 
 {% endblock %}
