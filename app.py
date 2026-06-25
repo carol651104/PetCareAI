@@ -1666,7 +1666,7 @@ AI 評分原因：
 
 
 # =========================
-# 健康報告
+# 健康報告：依寵物分組
 # =========================
 
 @app.route("/report")
@@ -1677,16 +1677,9 @@ def report():
         return redirect(url_for("pricing"))
 
     pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
-    pet_ids = [pet.id for pet in pets]
 
-    health_records = []
-    medical_records = []
-    reminders = []
-    ai_records = []
-
-    latest_health_record = None
-    latest_medical_record = None
-    pending_reminders = []
+    pet_report_data = []
+    pet_report_chart_data = []
 
     total_health_records = 0
     total_medical_records = 0
@@ -1694,58 +1687,59 @@ def report():
     total_pending_reminders = 0
     total_ai_records = 0
 
-    weight_trend_data = []
-    health_status_data = []
-    care_summary_data = []
+    overall_highest_risk_score = 0
+    overall_highest_risk_level = "無紀錄"
 
-    highest_risk_score = 0
-    highest_risk_level = "無紀錄"
+    for pet in pets:
+        health_records = HealthRecord.query.filter_by(pet_id=pet.id).order_by(
+            HealthRecord.record_date.desc(),
+            HealthRecord.id.desc()
+        ).all()
 
-    if pet_ids:
-        health_records = HealthRecord.query.filter(
-            HealthRecord.pet_id.in_(pet_ids)
-        ).order_by(HealthRecord.record_date.desc(), HealthRecord.id.desc()).all()
+        medical_records = MedicalRecord.query.filter_by(pet_id=pet.id).order_by(
+            MedicalRecord.visit_date.desc(),
+            MedicalRecord.id.desc()
+        ).all()
 
-        medical_records = MedicalRecord.query.filter(
-            MedicalRecord.pet_id.in_(pet_ids)
-        ).order_by(MedicalRecord.visit_date.desc(), MedicalRecord.id.desc()).all()
-
-        reminders = Reminder.query.filter(
-            Reminder.pet_id.in_(pet_ids)
-        ).order_by(Reminder.reminder_date.asc(), Reminder.id.asc()).all()
-
-        pending_reminders = Reminder.query.filter(
-            Reminder.pet_id.in_(pet_ids),
-            Reminder.is_done == False
-        ).order_by(Reminder.reminder_date.asc(), Reminder.id.asc()).all()
+        reminders = Reminder.query.filter_by(pet_id=pet.id).order_by(
+            Reminder.is_done.asc(),
+            Reminder.reminder_date.asc(),
+            Reminder.id.asc()
+        ).all()
 
         ai_records = AIConsultation.query.filter_by(
-            user_id=current_user.id
-        ).order_by(AIConsultation.created_at.desc()).all()
+            user_id=current_user.id,
+            pet_id=pet.id
+        ).order_by(
+            AIConsultation.created_at.desc(),
+            AIConsultation.id.desc()
+        ).all()
+
+        pending_reminders = [r for r in reminders if not r.is_done]
+        done_reminders = [r for r in reminders if r.is_done]
 
         latest_health_record = health_records[0] if health_records else None
         latest_medical_record = medical_records[0] if medical_records else None
 
-        total_health_records = len(health_records)
-        total_medical_records = len(medical_records)
-        total_reminders = len(reminders)
-        total_pending_reminders = len(pending_reminders)
-        total_ai_records = len(ai_records)
+        total_health_records += len(health_records)
+        total_medical_records += len(medical_records)
+        total_reminders += len(reminders)
+        total_pending_reminders += len(pending_reminders)
+        total_ai_records += len(ai_records)
 
         weight_records = sorted(
             [record for record in health_records if record.weight is not None],
             key=lambda r: (r.record_date, r.id)
         )
 
+        weight_trend_data = []
         for record in weight_records:
             weight_trend_data.append({
                 "date": record.record_date.strftime("%Y-%m-%d") if record.record_date else "",
-                "pet": record.pet.name if record.pet else "未指定",
                 "weight": float(record.weight),
             })
 
         status_counter = {}
-
         for record in health_records:
             appetite = record.appetite.strip() if record.appetite else "食慾未填寫"
             activity = record.activity.strip() if record.activity else "活動量未填寫"
@@ -1765,11 +1759,14 @@ def report():
         ]
 
         care_summary_data = [
-            {"label": "健康紀錄", "count": total_health_records},
-            {"label": "就醫紀錄", "count": total_medical_records},
-            {"label": "提醒事項", "count": total_reminders},
-            {"label": "AI 諮詢", "count": total_ai_records},
+            {"label": "健康紀錄", "count": len(health_records)},
+            {"label": "就醫紀錄", "count": len(medical_records)},
+            {"label": "提醒事項", "count": len(reminders)},
+            {"label": "AI 諮詢", "count": len(ai_records)},
         ]
+
+        highest_risk_score = 0
+        highest_risk_level = "無紀錄"
 
         for record in ai_records:
             score = record.risk_score or 0
@@ -1777,35 +1774,56 @@ def report():
                 highest_risk_score = score
                 highest_risk_level = record.risk_level or "未標示"
 
-    recent_health_records = health_records[:5]
-    recent_medical_records = medical_records[:5]
-    recent_ai_records = ai_records[:3]
+            if score >= overall_highest_risk_score:
+                overall_highest_risk_score = score
+                overall_highest_risk_level = record.risk_level or "未標示"
+
+        pet_report_data.append({
+            "pet": pet,
+            "health_records": health_records,
+            "medical_records": medical_records,
+            "reminders": reminders,
+            "pending_reminders": pending_reminders,
+            "done_reminders": done_reminders,
+            "ai_records": ai_records,
+            "recent_health_records": health_records[:5],
+            "recent_medical_records": medical_records[:5],
+            "recent_ai_records": ai_records[:3],
+            "latest_health_record": latest_health_record,
+            "latest_medical_record": latest_medical_record,
+            "health_record_count": len(health_records),
+            "medical_record_count": len(medical_records),
+            "reminder_count": len(reminders),
+            "pending_reminder_count": len(pending_reminders),
+            "done_reminder_count": len(done_reminders),
+            "ai_record_count": len(ai_records),
+            "highest_risk_score": highest_risk_score,
+            "highest_risk_level": highest_risk_level,
+        })
+
+        pet_report_chart_data.append({
+            "pet_id": pet.id,
+            "pet_name": pet.name,
+            "weight_trend_data": weight_trend_data,
+            "health_status_data": health_status_data,
+            "care_summary_data": care_summary_data,
+        })
 
     report_generated_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M")
 
     return render_template(
         "report.html",
         pets=pets,
-        health_records=health_records,
-        medical_records=medical_records,
-        reminders=reminders,
-        pending_reminders=pending_reminders,
-        ai_records=ai_records,
-        recent_health_records=recent_health_records,
-        recent_medical_records=recent_medical_records,
-        recent_ai_records=recent_ai_records,
-        latest_health_record=latest_health_record,
-        latest_medical_record=latest_medical_record,
+        pet_report_data=pet_report_data,
+        pet_report_chart_data=pet_report_chart_data,
+        total_pet_count=len(pets),
         total_health_records=total_health_records,
         total_medical_records=total_medical_records,
         total_reminders=total_reminders,
         total_pending_reminders=total_pending_reminders,
         total_ai_records=total_ai_records,
-        highest_risk_score=highest_risk_score,
-        highest_risk_level=highest_risk_level,
-        weight_trend_data=weight_trend_data,
-        health_status_data=health_status_data,
-        care_summary_data=care_summary_data,
+        highest_risk_score=overall_highest_risk_score,
+        highest_risk_level=overall_highest_risk_level,
         report_generated_at=report_generated_at,
     )
 
