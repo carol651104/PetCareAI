@@ -828,45 +828,44 @@ def health_trends():
         return redirect(url_for("pricing"))
 
     pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
-    pet_ids = [pet.id for pet in pets]
-
-    health_records = []
-    medical_records = []
-    reminders = []
-
-    weight_trend_data = []
-    appetite_stats = {}
-    activity_stats = {}
-    care_trend_map = {}
 
     total_health_records = 0
     total_medical_records = 0
     total_reminders = 0
     total_care_records = 0
 
-    if pet_ids:
-        health_records = HealthRecord.query.filter(
-            HealthRecord.pet_id.in_(pet_ids)
-        ).order_by(HealthRecord.record_date.asc(), HealthRecord.id.asc()).all()
+    pet_trend_data = []
+    pet_trend_chart_data = []
 
-        medical_records = MedicalRecord.query.filter(
-            MedicalRecord.pet_id.in_(pet_ids)
-        ).order_by(MedicalRecord.visit_date.asc(), MedicalRecord.id.asc()).all()
+    for pet in pets:
+        health_records = HealthRecord.query.filter_by(pet_id=pet.id).order_by(
+            HealthRecord.record_date.asc(),
+            HealthRecord.id.asc()
+        ).all()
 
-        reminders = Reminder.query.filter(
-            Reminder.pet_id.in_(pet_ids)
-        ).order_by(Reminder.reminder_date.asc(), Reminder.id.asc()).all()
+        medical_records = MedicalRecord.query.filter_by(pet_id=pet.id).order_by(
+            MedicalRecord.visit_date.asc(),
+            MedicalRecord.id.asc()
+        ).all()
 
-        total_health_records = len(health_records)
-        total_medical_records = len(medical_records)
-        total_reminders = len(reminders)
-        total_care_records = total_health_records + total_medical_records + total_reminders
+        reminders = Reminder.query.filter_by(pet_id=pet.id).order_by(
+            Reminder.reminder_date.asc(),
+            Reminder.id.asc()
+        ).all()
+
+        total_health_records += len(health_records)
+        total_medical_records += len(medical_records)
+        total_reminders += len(reminders)
+
+        appetite_stats = {}
+        activity_stats = {}
+        care_trend_map = {}
+        weight_trend_data = []
 
         for record in health_records:
             if record.weight is not None:
                 weight_trend_data.append({
                     "date": record.record_date.strftime("%Y-%m-%d") if record.record_date else "",
-                    "pet_name": record.pet.name if record.pet else "未指定寵物",
                     "weight": float(record.weight),
                 })
 
@@ -890,6 +889,7 @@ def health_trends():
                         "reminder": 0,
                         "total": 0,
                     }
+
                 care_trend_map[month_key]["health"] += 1
                 care_trend_map[month_key]["total"] += 1
 
@@ -904,6 +904,7 @@ def health_trends():
                         "reminder": 0,
                         "total": 0,
                     }
+
                 care_trend_map[month_key]["medical"] += 1
                 care_trend_map[month_key]["total"] += 1
 
@@ -918,46 +919,56 @@ def health_trends():
                         "reminder": 0,
                         "total": 0,
                     }
+
                 care_trend_map[month_key]["reminder"] += 1
                 care_trend_map[month_key]["total"] += 1
 
-    appetite_chart_data = [
-        {"label": key, "value": value}
-        for key, value in appetite_stats.items()
-    ]
+        appetite_chart_data = [
+            {"label": key, "value": value}
+            for key, value in appetite_stats.items()
+        ]
 
-    activity_chart_data = [
-        {"label": key, "value": value}
-        for key, value in activity_stats.items()
-    ]
+        activity_chart_data = [
+            {"label": key, "value": value}
+            for key, value in activity_stats.items()
+        ]
 
-    care_trend_data = [
-        care_trend_map[key]
-        for key in sorted(care_trend_map.keys())
-    ]
+        care_trend_data = [
+            care_trend_map[key]
+            for key in sorted(care_trend_map.keys())
+        ]
+
+        pet_trend_data.append({
+            "pet": pet,
+            "health_record_count": len(health_records),
+            "medical_record_count": len(medical_records),
+            "reminder_count": len(reminders),
+            "care_record_count": len(health_records) + len(medical_records) + len(reminders),
+            "latest_health_record": health_records[-1] if health_records else None,
+            "latest_medical_record": medical_records[-1] if medical_records else None,
+        })
+
+        pet_trend_chart_data.append({
+            "pet_id": pet.id,
+            "pet_name": pet.name,
+            "weight_trend_data": weight_trend_data,
+            "appetite_chart_data": appetite_chart_data,
+            "activity_chart_data": activity_chart_data,
+            "care_trend_data": care_trend_data,
+        })
+
+    total_care_records = total_health_records + total_medical_records + total_reminders
 
     return render_template(
         "health_trends.html",
         pets=pets,
-        health_records=health_records,
-        medical_records=medical_records,
-        reminders=reminders,
-        weight_trend_data=weight_trend_data,
-        appetite_chart_data=appetite_chart_data,
-        activity_chart_data=activity_chart_data,
-        care_trend_data=care_trend_data,
+        pet_trend_data=pet_trend_data,
+        pet_trend_chart_data=pet_trend_chart_data,
         total_health_records=total_health_records,
         total_medical_records=total_medical_records,
         total_reminders=total_reminders,
         total_care_records=total_care_records,
     )
-
-
-@app.route("/health_trends")
-@login_required
-def health_trends_alias():
-    return redirect(url_for("health_trends"))
-
 
 # =========================
 # 寵物資料 CRUD
