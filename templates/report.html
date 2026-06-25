@@ -134,7 +134,9 @@
             <div class="chart-card">
                 <h3>體重趨勢</h3>
                 {% if weight_trend_data|length >= 2 %}
-                    <canvas id="weightChart"></canvas>
+                    <div class="chart-canvas-wrap">
+                        <canvas id="weightChart"></canvas>
+                    </div>
                 {% elif weight_trend_data|length == 1 %}
                     <div class="empty-chart">
                         目前只有一筆體重紀錄，尚無法形成趨勢。<br>
@@ -148,7 +150,9 @@
             <div class="chart-card">
                 <h3>健康狀態分布</h3>
                 {% if health_status_data %}
-                    <canvas id="statusChart"></canvas>
+                    <div class="chart-canvas-wrap">
+                        <canvas id="statusChart"></canvas>
+                    </div>
                 {% else %}
                     <div class="empty-chart">目前沒有足夠的健康狀態資料。</div>
                 {% endif %}
@@ -157,7 +161,9 @@
             <div class="chart-card wide-chart">
                 <h3>照護紀錄統計</h3>
                 {% if care_summary_data %}
-                    <canvas id="careChart"></canvas>
+                    <div class="chart-canvas-wrap large-chart">
+                        <canvas id="careChart"></canvas>
+                    </div>
                 {% else %}
                     <div class="empty-chart">目前沒有照護紀錄資料。</div>
                 {% endif %}
@@ -327,6 +333,7 @@
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: {
                         display: true
@@ -365,6 +372,7 @@
             options: {
                 indexAxis: "y",
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: {
                         display: false
@@ -400,6 +408,7 @@
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: {
                         display: false
@@ -425,6 +434,9 @@
 <style>
     .report-page {
         padding-bottom: 60px;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
     }
 
     .report-header {
@@ -453,6 +465,10 @@
         padding: 26px;
         margin-bottom: 22px;
         box-shadow: 0 10px 28px rgba(0, 0, 0, 0.045);
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
     }
 
     .report-meta-card {
@@ -495,6 +511,7 @@
         border-radius: 18px;
         padding: 18px;
         align-items: start;
+        box-sizing: border-box;
     }
 
     .pet-report-photo,
@@ -522,6 +539,7 @@
         border-radius: 18px;
         padding: 20px;
         text-align: center;
+        box-sizing: border-box;
     }
 
     .summary-card span {
@@ -552,6 +570,7 @@
         background: #fbfaf8;
         border-radius: 18px;
         padding: 18px;
+        box-sizing: border-box;
     }
 
     .chart-grid {
@@ -559,17 +578,45 @@
         grid-template-columns: 1fr 1fr;
         gap: 18px;
         margin-top: 18px;
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+        box-sizing: border-box;
     }
 
     .chart-card {
         background: #f6f8ff;
         border-radius: 18px;
         padding: 20px;
-        min-height: 320px;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow: hidden;
+        box-sizing: border-box;
     }
 
     .wide-chart {
         grid-column: 1 / -1;
+    }
+
+    .chart-canvas-wrap {
+        position: relative;
+        width: 100%;
+        height: 280px;
+        max-width: 100%;
+        overflow: hidden;
+        box-sizing: border-box;
+    }
+
+    .chart-canvas-wrap.large-chart {
+        height: 300px;
+    }
+
+    .chart-canvas-wrap canvas {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        display: block;
     }
 
     .empty-chart {
@@ -583,6 +630,7 @@
         color: #777777;
         line-height: 1.8;
         padding: 20px;
+        box-sizing: border-box;
     }
 
     .table-wrap {
@@ -623,6 +671,7 @@
         border-radius: 16px;
         padding: 16px;
         line-height: 1.7;
+        box-sizing: border-box;
     }
 
     .disclaimer-card {
@@ -650,6 +699,10 @@
         .pet-report-card {
             grid-template-columns: 1fr;
         }
+
+        .wide-chart {
+            grid-column: auto;
+        }
     }
 
     @media print {
@@ -670,14 +723,24 @@
             border: 1px solid #eeeeee;
             break-inside: avoid;
             page-break-inside: avoid;
+            overflow: visible;
         }
 
         .report-page {
             padding-bottom: 0;
+            overflow: visible;
+        }
+
+        .chart-canvas-wrap {
+            height: 230px !important;
+        }
+
+        .chart-canvas-wrap.large-chart {
+            height: 240px !important;
         }
 
         canvas {
-            max-height: 260px !important;
+            max-height: 240px !important;
         }
     }
 </style>
