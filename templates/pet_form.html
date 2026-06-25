@@ -1,59 +1,477 @@
 {% extends "base.html" %}
 
 {% block title %}
-    {% if mode == "add" %}新增寵物{% else %}修改寵物{% endif %}
+    {% if mode == "edit" %}
+        編輯寵物資料
+    {% else %}
+        新增寵物資料
+    {% endif %}
 {% endblock %}
 
 {% block content %}
 
-<div class="card" style="max-width: 760px; margin: 0 auto;">
-    <h1>{% if mode == "add" %}新增寵物{% else %}修改寵物{% endif %}</h1>
+<!-- Cropper.js CSS -->
+<link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css"
+/>
 
-    <form method="POST" enctype="multipart/form-data">
-        <label>寵物名稱 *</label>
-        <input type="text" name="name" value="{{ pet.name if pet else '' }}" required>
+<div class="form-page">
 
-        <label>物種 *</label>
-        <select name="species" required>
-            {% set species_list = ["貓", "狗", "兔子", "倉鼠", "天竺鼠", "鳥類", "鸚鵡", "烏龜", "魚類", "蜥蜴", "蛇", "刺蝟", "蜜袋鼯", "雪貂", "其他"] %}
-            {% for item in species_list %}
-                <option value="{{ item }}" {% if pet and pet.species == item %}selected{% endif %}>{{ item }}</option>
-            {% endfor %}
-        </select>
+    <div class="form-card">
 
-        <label>品種</label>
-        <input type="text" name="breed" value="{{ pet.breed if pet else '' }}">
+        <h1>
+            {% if mode == "edit" %}
+                編輯寵物資料
+            {% else %}
+                新增寵物資料
+            {% endif %}
+        </h1>
 
-        <label>性別</label>
-        <select name="gender">
-            {% set gender_list = ["母", "公", "未知"] %}
-            {% for item in gender_list %}
-                <option value="{{ item }}" {% if pet and pet.gender == item %}selected{% endif %}>{{ item }}</option>
-            {% endfor %}
-        </select>
+        <p class="muted">
+            請填寫寵物基本資料，並可上傳寵物照片。上傳照片後可以自行調整裁切範圍。
+        </p>
 
-        <label>年齡</label>
-        <input type="text" name="age" value="{{ pet.age if pet else '' }}" placeholder="例如：3 歲、6 個月">
-
-        <label>體重 kg</label>
-        <input type="number" step="0.1" name="weight" value="{{ pet.weight if pet and pet.weight else '' }}">
-
-        <label>{% if mode == "add" %}上傳照片{% else %}更換照片{% endif %}</label>
-        <input type="file" name="photo_file" accept="image/png, image/jpeg, image/jpg, image/gif, image/webp">
-
-        {% if pet and pet.photo_url %}
-            <div class="record">
-                目前照片：<br>
-                <img src="{{ pet.photo_url }}" style="max-width:220px; border-radius:14px;">
+        {% if mode == "edit" and pet and pet.photo_url %}
+            <div class="current-photo-box">
+                <p class="section-label">目前照片</p>
+                <img src="{{ pet.photo_url }}" alt="目前寵物照片" class="current-photo">
             </div>
         {% endif %}
 
-        <label>備註</label>
-        <textarea name="note">{{ pet.note if pet else '' }}</textarea>
+        <form method="POST" enctype="multipart/form-data" id="petForm">
 
-        <button class="btn btn-brown" type="submit">儲存</button>
-        <a class="btn" href="/pets">返回列表</a>
-    </form>
+            <div class="form-group">
+                <label for="name">寵物名稱 <span class="required">*</span></label>
+                <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value="{{ pet.name if pet else '' }}"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="species">物種 <span class="required">*</span></label>
+                <input
+                    type="text"
+                    id="species"
+                    name="species"
+                    value="{{ pet.species if pet else '' }}"
+                    placeholder="例如：貓、狗、兔子"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="breed">品種</label>
+                <input
+                    type="text"
+                    id="breed"
+                    name="breed"
+                    value="{{ pet.breed if pet else '' }}"
+                    placeholder="例如：米克斯、英短、柴犬"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="gender">性別</label>
+                <select id="gender" name="gender">
+                    <option value="">請選擇</option>
+                    <option value="公" {% if pet and pet.gender == "公" %}selected{% endif %}>公</option>
+                    <option value="母" {% if pet and pet.gender == "母" %}selected{% endif %}>母</option>
+                    <option value="未知" {% if pet and pet.gender == "未知" %}selected{% endif %}>未知</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="age">年齡</label>
+                <input
+                    type="text"
+                    id="age"
+                    name="age"
+                    value="{{ pet.age if pet else '' }}"
+                    placeholder="例如：3、3.5、幼年、老年"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="weight">體重 kg</label>
+                <input
+                    type="number"
+                    step="0.1"
+                    id="weight"
+                    name="weight"
+                    value="{{ pet.weight if pet and pet.weight is not none else '' }}"
+                    placeholder="例如：4.5"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="photo_file">寵物照片</label>
+                <input
+                    type="file"
+                    id="photo_file"
+                    name="photo_file"
+                    accept="image/png, image/jpeg, image/jpg, image/gif, image/webp"
+                >
+                <p class="hint">
+                    選擇照片後，可以拖曳、縮放，調整想保留的範圍。
+                </p>
+            </div>
+
+            <div class="crop-section" id="cropSection" style="display: none;">
+                <p class="section-label">調整照片範圍</p>
+
+                <div class="crop-wrapper">
+                    <img id="cropImage" alt="裁切預覽">
+                </div>
+
+                <div class="crop-actions">
+                    <button type="button" class="btn small-btn" id="zoomInBtn">放大</button>
+                    <button type="button" class="btn small-btn" id="zoomOutBtn">縮小</button>
+                    <button type="button" class="btn small-btn" id="rotateLeftBtn">向左旋轉</button>
+                    <button type="button" class="btn small-btn" id="resetCropBtn">重設</button>
+                </div>
+
+                <p class="hint">
+                    系統會依照你選擇的範圍產生正方形寵物照片，避免臉部或主體被自動切掉。
+                </p>
+            </div>
+
+            <div class="form-group">
+                <label for="note">備註</label>
+                <textarea
+                    id="note"
+                    name="note"
+                    rows="4"
+                    placeholder="可填寫個性、特殊照護需求、過敏資訊等"
+                >{{ pet.note if pet and pet.note else '' }}</textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn">
+                    {% if mode == "edit" %}
+                        儲存修改
+                    {% else %}
+                        新增寵物
+                    {% endif %}
+                </button>
+
+                <a href="{{ url_for('pets') }}" class="btn secondary-btn">取消</a>
+            </div>
+
+        </form>
+
+    </div>
+
 </div>
+
+<!-- Cropper.js JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+
+<script>
+    const fileInput = document.getElementById("photo_file");
+    const cropSection = document.getElementById("cropSection");
+    const cropImage = document.getElementById("cropImage");
+    const petForm = document.getElementById("petForm");
+
+    const zoomInBtn = document.getElementById("zoomInBtn");
+    const zoomOutBtn = document.getElementById("zoomOutBtn");
+    const rotateLeftBtn = document.getElementById("rotateLeftBtn");
+    const resetCropBtn = document.getElementById("resetCropBtn");
+
+    let cropper = null;
+    let selectedFileName = "pet_photo.jpg";
+    let selectedFileType = "image/jpeg";
+
+    fileInput.addEventListener("change", function (event) {
+        const file = event.target.files[0];
+
+        if (!file) {
+            return;
+        }
+
+        selectedFileName = file.name || "pet_photo.jpg";
+        selectedFileType = file.type || "image/jpeg";
+
+        const allowedTypes = [
+            "image/png",
+            "image/jpeg",
+            "image/jpg",
+            "image/gif",
+            "image/webp"
+        ];
+
+        if (!allowedTypes.includes(selectedFileType)) {
+            alert("照片格式不支援，請上傳 png、jpg、jpeg、gif 或 webp。");
+            fileInput.value = "";
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+            cropImage.src = e.target.result;
+            cropSection.style.display = "block";
+
+            if (cropper) {
+                cropper.destroy();
+            }
+
+            cropper = new Cropper(cropImage, {
+                aspectRatio: 1,
+                viewMode: 1,
+                dragMode: "move",
+                autoCropArea: 0.85,
+                responsive: true,
+                background: false,
+                guides: true,
+                center: true,
+                movable: true,
+                zoomable: true,
+                rotatable: true,
+                scalable: false
+            });
+        };
+
+        reader.readAsDataURL(file);
+    });
+
+    zoomInBtn.addEventListener("click", function () {
+        if (cropper) {
+            cropper.zoom(0.1);
+        }
+    });
+
+    zoomOutBtn.addEventListener("click", function () {
+        if (cropper) {
+            cropper.zoom(-0.1);
+        }
+    });
+
+    rotateLeftBtn.addEventListener("click", function () {
+        if (cropper) {
+            cropper.rotate(-90);
+        }
+    });
+
+    resetCropBtn.addEventListener("click", function () {
+        if (cropper) {
+            cropper.reset();
+        }
+    });
+
+    petForm.addEventListener("submit", function (event) {
+        if (!cropper) {
+            return;
+        }
+
+        event.preventDefault();
+
+        const canvas = cropper.getCroppedCanvas({
+            width: 800,
+            height: 800,
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: "high"
+        });
+
+        canvas.toBlob(function (blob) {
+            if (!blob) {
+                alert("照片處理失敗，請重新選擇照片。");
+                return;
+            }
+
+            const newFileName = selectedFileName.replace(/\.[^/.]+$/, "") + "_cropped.jpg";
+            const croppedFile = new File([blob], newFileName, {
+                type: "image/jpeg",
+                lastModified: Date.now()
+            });
+
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(croppedFile);
+            fileInput.files = dataTransfer.files;
+
+            petForm.submit();
+        }, "image/jpeg", 0.9);
+    });
+</script>
+
+<style>
+    .form-page {
+        width: 100%;
+        padding: 24px 0 50px;
+    }
+
+    .form-card {
+        width: min(760px, 92%);
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 22px;
+        padding: 32px;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.05);
+    }
+
+    .form-card h1 {
+        color: #b66b36;
+        font-size: 1.7rem;
+        margin-bottom: 10px;
+    }
+
+    .muted {
+        color: #666666;
+        line-height: 1.8;
+        font-size: 0.94rem;
+    }
+
+    .form-group {
+        margin-top: 18px;
+    }
+
+    .form-group label {
+        display: block;
+        color: #6a4a35;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .required {
+        color: #d85c8a;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        border: 1px solid #e3e3e3;
+        border-radius: 14px;
+        padding: 12px 14px;
+        font-size: 0.95rem;
+        outline: none;
+        background: #ffffff;
+        box-sizing: border-box;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        border-color: #8faeee;
+        box-shadow: 0 0 0 3px rgba(143, 174, 238, 0.18);
+    }
+
+    .hint {
+        color: #888888;
+        font-size: 0.84rem;
+        margin-top: 8px;
+        line-height: 1.6;
+    }
+
+    .section-label {
+        color: #b66b36;
+        font-weight: 700;
+        margin-bottom: 12px;
+    }
+
+    .current-photo-box {
+        margin-top: 22px;
+        background: #f5f7ff;
+        border-radius: 18px;
+        padding: 18px;
+    }
+
+    .current-photo {
+        width: 150px;
+        height: 150px;
+        border-radius: 18px;
+        object-fit: cover;
+        display: block;
+        border: 1px solid #e5e9f8;
+    }
+
+    .crop-section {
+        margin-top: 22px;
+        background: #f5f7ff;
+        border-radius: 18px;
+        padding: 18px;
+    }
+
+    .crop-wrapper {
+        width: 100%;
+        max-height: 420px;
+        background: #eef3ff;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    #cropImage {
+        display: block;
+        max-width: 100%;
+        max-height: 420px;
+    }
+
+    .crop-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 14px;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 28px;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 120px;
+        border: none;
+        border-radius: 999px;
+        padding: 11px 20px;
+        background: #8faeee;
+        color: #ffffff;
+        font-size: 0.92rem;
+        font-weight: 700;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .btn:hover {
+        background: #789be0;
+        color: #ffffff;
+        text-decoration: none;
+    }
+
+    .secondary-btn {
+        background: #d7ddeb;
+        color: #555555;
+    }
+
+    .secondary-btn:hover {
+        background: #c7cfdf;
+        color: #444444;
+    }
+
+    .small-btn {
+        min-width: auto;
+        padding: 8px 14px;
+        font-size: 0.84rem;
+    }
+
+    @media (max-width: 600px) {
+        .form-card {
+            padding: 24px 18px;
+        }
+
+        .current-photo {
+            width: 120px;
+            height: 120px;
+        }
+    }
+</style>
 
 {% endblock %}
