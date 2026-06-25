@@ -98,9 +98,6 @@ def save_uploaded_photo(file):
         flash("照片格式不支援，請上傳 png、jpg、jpeg、gif 或 webp。")
         return None
 
-    # =========================
-    # Render 上線環境：使用 Cloudinary
-    # =========================
     if os.getenv("CLOUDINARY_URL"):
         try:
             upload_result = cloudinary.uploader.upload(
@@ -119,9 +116,6 @@ def save_uploaded_photo(file):
             flash("照片上傳失敗，請稍後再試。")
             return None
 
-    # =========================
-    # 本機開發環境 fallback
-    # =========================
     filename = secure_filename(file.filename)
     ext = filename.rsplit(".", 1)[1].lower()
     new_filename = f"{uuid.uuid4().hex}.{ext}"
@@ -439,11 +433,6 @@ def apply_emergency_guardrail(score, symptom):
 
 
 def calibrate_ai_score(score, symptom):
-    """
-    分數校正：
-    避免 AI 對輕微症狀過度保守，例如「吐一次」被判成高風險。
-    但如果有嚴重症狀，則不降分。
-    """
     symptom_text = symptom.lower().strip() if symptom else ""
 
     mild_vomit_keywords = [
@@ -1227,16 +1216,37 @@ def delete_pet(pet_id):
 @app.route("/health-records")
 @login_required
 def health_records():
-    user_pets = Pet.query.filter_by(user_id=current_user.id).all()
-    pet_ids = [pet.id for pet in user_pets]
+    user_pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
 
-    records = []
-    if pet_ids:
-        records = HealthRecord.query.filter(
-            HealthRecord.pet_id.in_(pet_ids)
-        ).order_by(HealthRecord.record_date.desc()).all()
+    pet_records_data = []
+    all_records = []
 
-    return render_template("health_records.html", records=records)
+    for pet in user_pets:
+        records = HealthRecord.query.filter_by(pet_id=pet.id).order_by(
+            HealthRecord.record_date.desc(),
+            HealthRecord.id.desc()
+        ).all()
+
+        all_records.extend(records)
+
+        latest_record = records[0] if records else None
+
+        pet_records_data.append({
+            "pet": pet,
+            "records": records,
+            "record_count": len(records),
+            "latest_record": latest_record,
+        })
+
+    total_records = len(all_records)
+
+    return render_template(
+        "health_records.html",
+        pets=user_pets,
+        records=all_records,
+        pet_records_data=pet_records_data,
+        total_records=total_records,
+    )
 
 
 @app.route("/pets/<int:pet_id>/health/add", methods=["GET", "POST"])
@@ -1785,7 +1795,6 @@ def report():
         total_pending_reminders = len(pending_reminders)
         total_ai_records = len(ai_records)
 
-        # 體重趨勢：依日期由舊到新
         weight_records = sorted(
             [record for record in health_records if record.weight is not None],
             key=lambda r: (r.record_date, r.id)
@@ -1798,7 +1807,6 @@ def report():
                 "weight": float(record.weight),
             })
 
-        # 健康狀態分布：食慾 + 活動量做簡單統計
         status_counter = {}
 
         for record in health_records:
@@ -1819,7 +1827,6 @@ def report():
             for key, value in status_counter.items()
         ]
 
-        # 照護紀錄統計
         care_summary_data = [
             {"label": "健康紀錄", "count": total_health_records},
             {"label": "就醫紀錄", "count": total_medical_records},
@@ -1827,7 +1834,6 @@ def report():
             {"label": "AI 諮詢", "count": total_ai_records},
         ]
 
-        # 最高 AI 風險
         for record in ai_records:
             score = record.risk_score or 0
             if score >= highest_risk_score:
