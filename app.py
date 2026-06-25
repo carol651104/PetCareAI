@@ -17,6 +17,8 @@ import os
 import uuid
 import json
 import re
+import cloudinary
+import cloudinary.uploader
 
 app = Flask(__name__)
 
@@ -44,6 +46,16 @@ login_manager.login_message = "請先登入後再使用此功能。"
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
+# =========================
+# Cloudinary 圖片儲存設定
+# =========================
+# Render Environment 需要設定 CLOUDINARY_URL
+# 格式：cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+
+cloudinary.config(
+    secure=True
+)
+
 
 # =========================
 # 免費版限制設定
@@ -65,12 +77,50 @@ def allowed_file(filename):
 
 
 def save_uploaded_photo(file):
+    """
+    寵物照片上傳函式。
+
+    有設定 CLOUDINARY_URL 時：
+    - 上傳到 Cloudinary
+    - 回傳 Cloudinary 的 secure_url
+    - 重新部署後圖片不會消失
+
+    沒有設定 CLOUDINARY_URL 時：
+    - fallback 存到 static/uploads
+    - 方便本機測試
+    """
+
     if not file or file.filename == "":
         return None
 
     if not allowed_file(file.filename):
+        flash("照片格式不支援，請上傳 png、jpg、jpeg、gif 或 webp。")
         return None
 
+    # =========================
+    # Render 上線環境：使用 Cloudinary
+    # =========================
+    if os.getenv("CLOUDINARY_URL"):
+        try:
+            upload_result = cloudinary.uploader.upload(
+                file,
+                folder="petcareai/pets",
+                resource_type="image",
+                use_filename=False,
+                unique_filename=True,
+                overwrite=False,
+            )
+
+            return upload_result.get("secure_url")
+
+        except Exception as e:
+            print(f"Cloudinary upload failed: {e}")
+            flash("照片上傳失敗，請稍後再試。")
+            return None
+
+    # =========================
+    # 本機開發環境 fallback
+    # =========================
     filename = secure_filename(file.filename)
     ext = filename.rsplit(".", 1)[1].lower()
     new_filename = f"{uuid.uuid4().hex}.{ext}"
