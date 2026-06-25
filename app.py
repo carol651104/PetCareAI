@@ -46,13 +46,6 @@ login_manager.login_message = "請先登入後再使用此功能。"
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-
-# =========================
-# Cloudinary 圖片儲存設定
-# =========================
-# Render Environment 需要設定 CLOUDINARY_URL
-# 格式：cloudinary://API_KEY:API_SECRET@CLOUD_NAME
-
 cloudinary.config(
     secure=True
 )
@@ -78,19 +71,6 @@ def allowed_file(filename):
 
 
 def save_uploaded_photo(file):
-    """
-    寵物照片上傳函式。
-
-    有設定 CLOUDINARY_URL 時：
-    - 上傳到 Cloudinary
-    - 回傳 Cloudinary 的 secure_url
-    - 重新部署後圖片不會消失
-
-    沒有設定 CLOUDINARY_URL 時：
-    - fallback 存到 static/uploads
-    - 方便本機測試
-    """
-
     if not file or file.filename == "":
         return None
 
@@ -108,9 +88,7 @@ def save_uploaded_photo(file):
                 unique_filename=True,
                 overwrite=False,
             )
-
             return upload_result.get("secure_url")
-
         except Exception as e:
             print(f"Cloudinary upload failed: {e}")
             flash("照片上傳失敗，請稍後再試。")
@@ -324,10 +302,6 @@ class AIConsultation(db.Model):
 
 
 def ensure_user_plan_columns():
-    """
-    如果舊資料庫沒有 plan / is_premium / ai_usage_count，可用這個函式補欄位。
-    目前沒有在啟動時自動執行，避免 Render 部署時卡住。
-    """
     inspector = inspect(db.engine)
     table_name = User.__tablename__
 
@@ -396,28 +370,11 @@ def apply_emergency_guardrail(score, symptom):
     symptom_text = symptom.lower().strip() if symptom else ""
 
     emergency_keywords = [
-        "吐血",
-        "血便",
-        "血尿",
-        "抽搐",
-        "癲癇",
-        "昏倒",
-        "休克",
-        "呼吸困難",
-        "喘不過氣",
-        "無法站立",
-        "站不起來",
-        "走路不穩",
-        "意識不清",
-        "癱瘓",
-        "中毒",
-        "誤食",
-        "吃到藥",
-        "吃到巧克力",
-        "吃到洋蔥",
-        "吃到葡萄",
-        "完全不吃",
-        "完全不喝",
+        "吐血", "血便", "血尿", "抽搐", "癲癇", "昏倒", "休克",
+        "呼吸困難", "喘不過氣", "無法站立", "站不起來",
+        "走路不穩", "意識不清", "癱瘓", "中毒", "誤食",
+        "吃到藥", "吃到巧克力", "吃到洋蔥", "吃到葡萄",
+        "完全不吃", "完全不喝",
     ]
 
     matched_keywords = []
@@ -436,47 +393,21 @@ def calibrate_ai_score(score, symptom):
     symptom_text = symptom.lower().strip() if symptom else ""
 
     mild_vomit_keywords = [
-        "吐了一次",
-        "吐一次",
-        "只吐一次",
-        "嘔吐一次",
-        "又吐了一次",
-        "今天吐了一次",
+        "吐了一次", "吐一次", "只吐一次", "嘔吐一次",
+        "又吐了一次", "今天吐了一次",
     ]
 
     stable_keywords = [
-        "精神正常",
-        "食慾正常",
-        "活動正常",
-        "有吃飯",
-        "有喝水",
-        "精神還好",
-        "食慾還好",
-        "看起來正常",
+        "精神正常", "食慾正常", "活動正常", "有吃飯",
+        "有喝水", "精神還好", "食慾還好", "看起來正常",
     ]
 
     severe_keywords = [
-        "一直吐",
-        "連續吐",
-        "吐很多次",
-        "吐好幾次",
-        "不吃飯",
-        "不喝水",
-        "完全不吃",
-        "完全不喝",
-        "精神不好",
-        "沒精神",
-        "很虛弱",
-        "吐血",
-        "血便",
-        "血尿",
-        "呼吸困難",
-        "喘不過氣",
-        "抽搐",
-        "昏倒",
-        "站不起來",
-        "中毒",
-        "誤食",
+        "一直吐", "連續吐", "吐很多次", "吐好幾次",
+        "不吃飯", "不喝水", "完全不吃", "完全不喝",
+        "精神不好", "沒精神", "很虛弱", "吐血", "血便",
+        "血尿", "呼吸困難", "喘不過氣", "抽搐", "昏倒",
+        "站不起來", "中毒", "誤食",
     ]
 
     has_mild_vomit = any(word in symptom_text for word in mild_vomit_keywords)
@@ -516,43 +447,19 @@ def fallback_rule_risk_score(age, weight, symptom):
         score += 10
 
     high_risk_keywords = [
-        "吐血",
-        "血便",
-        "血尿",
-        "抽搐",
-        "昏倒",
-        "呼吸困難",
-        "喘不過氣",
-        "站不起來",
-        "中毒",
-        "誤食",
+        "吐血", "血便", "血尿", "抽搐", "昏倒",
+        "呼吸困難", "喘不過氣", "站不起來", "中毒", "誤食",
     ]
 
     medium_risk_keywords = [
-        "吐",
-        "嘔吐",
-        "拉肚子",
-        "腹瀉",
-        "不吃",
-        "不吃飯",
-        "精神不好",
-        "沒精神",
-        "發燒",
-        "咳嗽",
-        "一直吐",
-        "連續吐",
-        "持續",
-        "反覆",
+        "吐", "嘔吐", "拉肚子", "腹瀉", "不吃", "不吃飯",
+        "精神不好", "沒精神", "發燒", "咳嗽", "一直吐",
+        "連續吐", "持續", "反覆",
     ]
 
     low_risk_keywords = [
-        "打噴嚏",
-        "抓癢",
-        "掉毛",
-        "食慾正常",
-        "精神正常",
-        "只吐一次",
-        "一次",
+        "打噴嚏", "抓癢", "掉毛", "食慾正常",
+        "精神正常", "只吐一次", "一次",
     ]
 
     for word in high_risk_keywords:
@@ -606,31 +513,6 @@ def calculate_ai_risk_score(
 8. 若使用者描述症狀輕微，且精神、食慾、活動力仍正常，應傾向低風險或中低風險。
 9. 若資訊不足，請保守評估為中低風險，不要直接評為高風險。
 10. 若出現呼吸困難、抽搐、昏倒、吐血、血便、血尿、中毒、誤食、無法站立、完全不吃不喝等情況，才應評為高風險。
-
-請依照以下評分標準：
-
-0 到 20 分：
-輕微症狀，且精神、食慾、活動力大致正常。
-例如：偶爾吐一次、打噴嚏、輕微抓癢、短暫食慾變化。
-
-21 到 34 分：
-低到中度風險，需要觀察。
-例如：吐一次但原因不明、輕微拉肚子、精神稍差但仍可活動。
-
-35 到 69 分：
-中風險，需要密切觀察，若持續或加重應就醫。
-例如：反覆嘔吐、拉肚子多次、食慾明顯下降、精神不好、發燒、咳嗽加重。
-
-70 到 100 分：
-高風險，建議盡快就醫或聯絡獸醫。
-例如：呼吸困難、抽搐、昏倒、吐血、血便、血尿、疑似中毒、誤食危險物、無法站立、完全不吃不喝、持續劇烈嘔吐。
-
-特別注意：
-- 「吐了一次」本身通常不應評為高風險。
-- 「又吐了一次」若沒有其他嚴重症狀，通常應落在 20 到 35 分。
-- 「吐了一次，但精神正常、食慾正常」通常應落在 10 到 25 分。
-- 「一直吐、不吃飯、精神很差」才應落在 60 分以上。
-- 「呼吸困難、抽搐、吐血、血便、站不起來」才應落在 80 分以上。
 
 寵物基本資料：
 名稱：{pet_name}
@@ -1321,16 +1203,37 @@ def delete_health_record(record_id):
 @app.route("/medical-records")
 @login_required
 def medical_records():
-    user_pets = Pet.query.filter_by(user_id=current_user.id).all()
-    pet_ids = [pet.id for pet in user_pets]
+    user_pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
 
-    records = []
-    if pet_ids:
-        records = MedicalRecord.query.filter(
-            MedicalRecord.pet_id.in_(pet_ids)
-        ).order_by(MedicalRecord.visit_date.desc()).all()
+    pet_medical_data = []
+    all_records = []
 
-    return render_template("medical_records.html", records=records)
+    for pet in user_pets:
+        records = MedicalRecord.query.filter_by(pet_id=pet.id).order_by(
+            MedicalRecord.visit_date.desc(),
+            MedicalRecord.id.desc()
+        ).all()
+
+        all_records.extend(records)
+
+        latest_record = records[0] if records else None
+
+        pet_medical_data.append({
+            "pet": pet,
+            "records": records,
+            "record_count": len(records),
+            "latest_record": latest_record,
+        })
+
+    total_records = len(all_records)
+
+    return render_template(
+        "medical_records.html",
+        pets=user_pets,
+        records=all_records,
+        pet_medical_data=pet_medical_data,
+        total_records=total_records,
+    )
 
 
 @app.route("/pets/<int:pet_id>/medical/add", methods=["GET", "POST"])
@@ -1403,16 +1306,50 @@ def delete_medical_record(record_id):
 @app.route("/reminders")
 @login_required
 def reminders():
-    user_pets = Pet.query.filter_by(user_id=current_user.id).all()
-    pet_ids = [pet.id for pet in user_pets]
+    user_pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
 
-    reminders_list = []
-    if pet_ids:
-        reminders_list = Reminder.query.filter(
-            Reminder.pet_id.in_(pet_ids)
-        ).order_by(Reminder.is_done.asc(), Reminder.reminder_date.asc()).all()
+    pet_reminder_data = []
+    all_reminders = []
+    total_pending_reminders = 0
+    total_done_reminders = 0
 
-    return render_template("reminders.html", reminders=reminders_list)
+    for pet in user_pets:
+        records = Reminder.query.filter_by(pet_id=pet.id).order_by(
+            Reminder.is_done.asc(),
+            Reminder.reminder_date.asc(),
+            Reminder.id.asc()
+        ).all()
+
+        all_reminders.extend(records)
+
+        pending_count = len([r for r in records if not r.is_done])
+        done_count = len([r for r in records if r.is_done])
+
+        total_pending_reminders += pending_count
+        total_done_reminders += done_count
+
+        latest_record = records[0] if records else None
+
+        pet_reminder_data.append({
+            "pet": pet,
+            "records": records,
+            "record_count": len(records),
+            "pending_count": pending_count,
+            "done_count": done_count,
+            "latest_record": latest_record,
+        })
+
+    total_records = len(all_reminders)
+
+    return render_template(
+        "reminders.html",
+        pets=user_pets,
+        reminders=all_reminders,
+        pet_reminder_data=pet_reminder_data,
+        total_records=total_records,
+        total_pending_reminders=total_pending_reminders,
+        total_done_reminders=total_done_reminders,
+    )
 
 
 @app.route("/pets/<int:pet_id>/reminder/add", methods=["GET", "POST"])
