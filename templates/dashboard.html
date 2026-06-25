@@ -73,11 +73,25 @@
                         </div>
 
                         <div class="pet-actions">
-                            <a href="{{ url_for('pets') }}" class="btn-dashboard-blue">查看詳細資料</a>
-                            <a href="{{ url_for('health_records') }}" class="btn-dashboard-green">新增健康紀錄</a>
-                            <a href="{{ url_for('medical_records') }}" class="btn-dashboard-blue">新增就醫紀錄</a>
-                            <a href="{{ url_for('reminders') }}" class="btn-dashboard-orange">新增提醒</a>
-                            <a href="{{ url_for('ai_assistant') }}" class="btn-dashboard-blue">AI 健康助理</a>
+                            <a href="{{ url_for('pet_detail', pet_id=pet.id) }}" class="btn-dashboard-blue">
+                                查看詳細資料
+                            </a>
+
+                            <a href="{{ url_for('add_health_record', pet_id=pet.id) }}" class="btn-dashboard-green">
+                                新增健康紀錄
+                            </a>
+
+                            <a href="{{ url_for('add_medical_record', pet_id=pet.id) }}" class="btn-dashboard-blue">
+                                新增就醫紀錄
+                            </a>
+
+                            <a href="{{ url_for('add_reminder', pet_id=pet.id) }}" class="btn-dashboard-orange">
+                                新增提醒
+                            </a>
+
+                            <a href="{{ url_for('ai_assistant') }}" class="btn-dashboard-blue">
+                                AI 健康助理
+                            </a>
                         </div>
                     </div>
                 {% endfor %}
@@ -142,7 +156,7 @@
                 {% endif %}
             </div>
 
-            <!-- 新增：健康趨勢圖表 -->
+            <!-- 健康趨勢圖表 -->
             <div class="dashboard-info-card">
                 <h5>健康趨勢圖表</h5>
 
