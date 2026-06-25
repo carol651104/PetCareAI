@@ -1,112 +1,685 @@
 {% extends "base.html" %}
 
-{% block title %}健康報告匯出{% endblock %}
+{% block title %}PetCareAI 健康報告{% endblock %}
 
 {% block content %}
 
+<div class="report-page">
+
+    <div class="report-header">
+        <div>
+            <h1>PetCareAI 健康報告</h1>
+            <p class="muted">整合寵物基本資料、健康紀錄、就醫紀錄、提醒事項與 AI 風險摘要。</p>
+        </div>
+
+        <div class="report-actions no-print">
+            <button class="btn" onclick="window.print()">列印 / 匯出 PDF</button>
+            <a class="btn btn-brown" href="/dashboard">返回 Dashboard</a>
+        </div>
+    </div>
+
+    <div class="report-meta-card">
+        <div>
+            <span class="meta-label">報告產生時間</span>
+            <strong>{{ report_generated_at }}</strong>
+        </div>
+        <div>
+            <span class="meta-label">目前方案</span>
+            <strong>Premium</strong>
+        </div>
+        <div>
+            <span class="meta-label">報告類型</span>
+            <strong>健康摘要報告</strong>
+        </div>
+    </div>
+
+    <div class="section-card">
+        <h2>一、寵物基本資料</h2>
+
+        {% if pets %}
+            <div class="pet-report-grid">
+                {% for pet in pets %}
+                    <div class="pet-report-card">
+                        {% if pet.photo_url %}
+                            <img src="{{ pet.photo_url }}" alt="{{ pet.name }}" class="pet-report-photo">
+                        {% else %}
+                            <div class="pet-report-placeholder">🐾</div>
+                        {% endif %}
+
+                        <div>
+                            <h3>{{ pet.name }}</h3>
+                            <p>
+                                物種：{{ pet.species }}<br>
+                                品種：{{ pet.breed or "未填寫" }}<br>
+                                性別：{{ pet.gender or "未填寫" }}<br>
+                                年齡：{{ pet.age or "未填寫" }}<br>
+                                體重：{{ pet.weight or "未填寫" }} kg<br>
+                                備註：{{ pet.note or "無" }}
+                            </p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="muted">目前尚未建立寵物資料。</p>
+        {% endif %}
+    </div>
+
+    <div class="section-card">
+        <h2>二、健康管理總覽</h2>
+
+        <div class="summary-grid">
+            <div class="summary-card">
+                <span>健康紀錄</span>
+                <strong>{{ total_health_records }}</strong>
+                <small>筆</small>
+            </div>
+
+            <div class="summary-card">
+                <span>就醫紀錄</span>
+                <strong>{{ total_medical_records }}</strong>
+                <small>筆</small>
+            </div>
+
+            <div class="summary-card">
+                <span>待完成提醒</span>
+                <strong>{{ total_pending_reminders }}</strong>
+                <small>項</small>
+            </div>
+
+            <div class="summary-card">
+                <span>最高 AI 風險</span>
+                <strong>{{ highest_risk_score }}</strong>
+                <small>{{ highest_risk_level }}</small>
+            </div>
+        </div>
+
+        <div class="overview-detail">
+            <div>
+                <h3>最近健康紀錄</h3>
+                {% if latest_health_record %}
+                    <p>
+                        日期：{{ latest_health_record.record_date }}<br>
+                        體重：{{ latest_health_record.weight or "未填寫" }} kg<br>
+                        食慾：{{ latest_health_record.appetite or "未填寫" }}<br>
+                        活動量：{{ latest_health_record.activity or "未填寫" }}<br>
+                        症狀：{{ latest_health_record.symptoms or "無" }}
+                    </p>
+                {% else %}
+                    <p class="muted">目前沒有健康紀錄。</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <h3>最近就醫紀錄</h3>
+                {% if latest_medical_record %}
+                    <p>
+                        日期：{{ latest_medical_record.visit_date }}<br>
+                        診所：{{ latest_medical_record.clinic_name or "未填寫" }}<br>
+                        診斷：{{ latest_medical_record.diagnosis or "未填寫" }}<br>
+                        藥物：{{ latest_medical_record.medicine or "無" }}
+                    </p>
+                {% else %}
+                    <p class="muted">目前沒有就醫紀錄。</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="section-card">
+        <h2>三、健康趨勢圖表</h2>
+        <p class="muted">以圖表方式呈現體重變化、健康狀態分布與照護紀錄統計。</p>
+
+        <div class="chart-grid">
+            <div class="chart-card">
+                <h3>體重趨勢</h3>
+                {% if weight_trend_data|length >= 2 %}
+                    <canvas id="weightChart"></canvas>
+                {% elif weight_trend_data|length == 1 %}
+                    <div class="empty-chart">
+                        目前只有一筆體重紀錄，尚無法形成趨勢。<br>
+                        最近體重：{{ weight_trend_data[0].weight }} kg
+                    </div>
+                {% else %}
+                    <div class="empty-chart">目前沒有可用的體重紀錄。</div>
+                {% endif %}
+            </div>
+
+            <div class="chart-card">
+                <h3>健康狀態分布</h3>
+                {% if health_status_data %}
+                    <canvas id="statusChart"></canvas>
+                {% else %}
+                    <div class="empty-chart">目前沒有足夠的健康狀態資料。</div>
+                {% endif %}
+            </div>
+
+            <div class="chart-card wide-chart">
+                <h3>照護紀錄統計</h3>
+                {% if care_summary_data %}
+                    <canvas id="careChart"></canvas>
+                {% else %}
+                    <div class="empty-chart">目前沒有照護紀錄資料。</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="section-card">
+        <h2>四、近期健康紀錄</h2>
+
+        {% if recent_health_records %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>寵物</th>
+                            <th>體重</th>
+                            <th>食慾</th>
+                            <th>活動量</th>
+                            <th>症狀</th>
+                            <th>用藥</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in recent_health_records %}
+                            <tr>
+                                <td>{{ record.record_date }}</td>
+                                <td>{{ record.pet.name if record.pet else "未指定" }}</td>
+                                <td>{{ record.weight or "未填寫" }} kg</td>
+                                <td>{{ record.appetite or "未填寫" }}</td>
+                                <td>{{ record.activity or "未填寫" }}</td>
+                                <td>{{ record.symptoms or "無" }}</td>
+                                <td>{{ record.medication or "無" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="hint">僅顯示最近 5 筆健康紀錄，避免報告內容過於冗長。</p>
+        {% else %}
+            <p class="muted">目前沒有健康紀錄。</p>
+        {% endif %}
+    </div>
+
+    <div class="section-card">
+        <h2>五、近期就醫紀錄</h2>
+
+        {% if recent_medical_records %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>寵物</th>
+                            <th>診所</th>
+                            <th>診斷</th>
+                            <th>藥物</th>
+                            <th>醫囑</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in recent_medical_records %}
+                            <tr>
+                                <td>{{ record.visit_date }}</td>
+                                <td>{{ record.pet.name if record.pet else "未指定" }}</td>
+                                <td>{{ record.clinic_name or "未填寫" }}</td>
+                                <td>{{ record.diagnosis or "未填寫" }}</td>
+                                <td>{{ record.medicine or "無" }}</td>
+                                <td>{{ record.doctor_advice or "無" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="hint">僅顯示最近 5 筆就醫紀錄。</p>
+        {% else %}
+            <p class="muted">目前沒有就醫紀錄。</p>
+        {% endif %}
+    </div>
+
+    <div class="section-card">
+        <h2>六、待完成提醒</h2>
+
+        {% if pending_reminders %}
+            <div class="reminder-list">
+                {% for reminder in pending_reminders %}
+                    <div class="mini-record">
+                        <strong>{{ reminder.reminder_type }}</strong><br>
+                        日期：{{ reminder.reminder_date }}<br>
+                        寵物：{{ reminder.pet.name if reminder.pet else "未指定" }}<br>
+                        備註：{{ reminder.note or "無" }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="muted">目前沒有待完成提醒。</p>
+        {% endif %}
+    </div>
+
+    <div class="section-card">
+        <h2>七、AI 風險摘要</h2>
+        <p class="muted">本報告僅保留 AI 風險分數與症狀摘要，不放入完整 AI 回覆，以避免報告過於冗長。</p>
+
+        {% if recent_ai_records %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>時間</th>
+                            <th>寵物</th>
+                            <th>症狀</th>
+                            <th>風險分數</th>
+                            <th>風險等級</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in recent_ai_records %}
+                            <tr>
+                                <td>{{ record.created_at }}</td>
+                                <td>{{ record.pet_name or "未指定" }}</td>
+                                <td>{{ record.symptom or "未填寫" }}</td>
+                                <td>{{ record.risk_score or 0 }}</td>
+                                <td>{{ record.risk_level or "未標示" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="hint">僅顯示最近 3 筆 AI 諮詢摘要。</p>
+        {% else %}
+            <p class="muted">目前沒有 AI 諮詢紀錄。</p>
+        {% endif %}
+    </div>
+
+    <div class="section-card disclaimer-card">
+        <h2>八、備註與免責聲明</h2>
+        <p>
+            本報告由 PetCareAI 根據使用者建立的寵物資料、健康紀錄、就醫紀錄、提醒事項與 AI 風險摘要自動整理產生。
+            報告內容僅供日常健康管理與照護參考，不能取代獸醫診斷、治療或專業醫療建議。
+            若寵物出現呼吸困難、抽搐、吐血、血便、持續嘔吐、精神明顯變差或完全不吃不喝等情況，請盡快聯絡獸醫或安排就醫。
+        </p>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    const weightTrendData = {{ weight_trend_data | tojson }};
+    const healthStatusData = {{ health_status_data | tojson }};
+    const careSummaryData = {{ care_summary_data | tojson }};
+
+    if (document.getElementById("weightChart") && weightTrendData.length >= 2) {
+        new Chart(document.getElementById("weightChart"), {
+            type: "line",
+            data: {
+                labels: weightTrendData.map(item => item.date),
+                datasets: [{
+                    label: "體重 kg",
+                    data: weightTrendData.map(item => item.weight),
+                    borderWidth: 3,
+                    tension: 0.35,
+                    pointRadius: 4,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: true
+                    }
+                },
+                scales: {
+                    y: {
+                        title: {
+                            display: true,
+                            text: "體重 kg"
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: "日期"
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    if (document.getElementById("statusChart") && healthStatusData.length > 0) {
+        new Chart(document.getElementById("statusChart"), {
+            type: "bar",
+            data: {
+                labels: healthStatusData.map(item => item.label),
+                datasets: [{
+                    label: "出現次數",
+                    data: healthStatusData.map(item => item.count),
+                    borderWidth: 1,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                indexAxis: "y",
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        },
+                        title: {
+                            display: true,
+                            text: "次數"
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    if (document.getElementById("careChart") && careSummaryData.length > 0) {
+        new Chart(document.getElementById("careChart"), {
+            type: "bar",
+            data: {
+                labels: careSummaryData.map(item => item.label),
+                datasets: [{
+                    label: "紀錄數量",
+                    data: careSummaryData.map(item => item.count),
+                    borderWidth: 1,
+                    borderRadius: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        },
+                        title: {
+                            display: true,
+                            text: "數量"
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+
 <style>
+    .report-page {
+        padding-bottom: 60px;
+    }
+
+    .report-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        align-items: flex-start;
+        margin-bottom: 22px;
+    }
+
+    .report-header h1 {
+        color: #b66b36;
+        margin-bottom: 8px;
+    }
+
+    .report-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .report-meta-card,
+    .section-card {
+        background: #ffffff;
+        border-radius: 22px;
+        padding: 26px;
+        margin-bottom: 22px;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.045);
+    }
+
+    .report-meta-card {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        background: #f6f8ff;
+    }
+
+    .meta-label {
+        display: block;
+        color: #777777;
+        font-size: 0.86rem;
+        margin-bottom: 6px;
+    }
+
+    .section-card h2 {
+        color: #b66b36;
+        margin-bottom: 16px;
+        font-size: 1.35rem;
+    }
+
+    .section-card h3 {
+        color: #b66b36;
+        margin-bottom: 10px;
+        font-size: 1.05rem;
+    }
+
+    .pet-report-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 18px;
+    }
+
+    .pet-report-card {
+        display: grid;
+        grid-template-columns: 130px 1fr;
+        gap: 18px;
+        background: #f6f8ff;
+        border-radius: 18px;
+        padding: 18px;
+        align-items: start;
+    }
+
+    .pet-report-photo,
+    .pet-report-placeholder {
+        width: 130px;
+        height: 130px;
+        object-fit: cover;
+        object-position: center;
+        border-radius: 18px;
+        background: #eef3ff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 46px;
+    }
+
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+    }
+
+    .summary-card {
+        background: #f6f8ff;
+        border-radius: 18px;
+        padding: 20px;
+        text-align: center;
+    }
+
+    .summary-card span {
+        display: block;
+        color: #666666;
+        margin-bottom: 8px;
+    }
+
+    .summary-card strong {
+        display: block;
+        font-size: 2rem;
+        color: #b66b36;
+        margin-bottom: 4px;
+    }
+
+    .summary-card small {
+        color: #777777;
+    }
+
+    .overview-detail {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        margin-top: 22px;
+    }
+
+    .overview-detail > div {
+        background: #fbfaf8;
+        border-radius: 18px;
+        padding: 18px;
+    }
+
+    .chart-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        margin-top: 18px;
+    }
+
+    .chart-card {
+        background: #f6f8ff;
+        border-radius: 18px;
+        padding: 20px;
+        min-height: 320px;
+    }
+
+    .wide-chart {
+        grid-column: 1 / -1;
+    }
+
+    .empty-chart {
+        min-height: 220px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        background: #eef3ff;
+        border-radius: 16px;
+        color: #777777;
+        line-height: 1.8;
+        padding: 20px;
+    }
+
+    .table-wrap {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #ffffff;
+    }
+
+    th {
+        background: #f6f8ff;
+        color: #6a4a35;
+        font-weight: 700;
+    }
+
+    th,
+    td {
+        border-bottom: 1px solid #eeeeee;
+        padding: 12px 10px;
+        text-align: left;
+        vertical-align: top;
+        font-size: 0.92rem;
+        line-height: 1.6;
+    }
+
+    .reminder-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 14px;
+    }
+
+    .mini-record {
+        background: #f6f8ff;
+        border-radius: 16px;
+        padding: 16px;
+        line-height: 1.7;
+    }
+
+    .disclaimer-card {
+        background: #fff8ef;
+    }
+
+    .hint {
+        color: #888888;
+        font-size: 0.84rem;
+        margin-top: 10px;
+    }
+
+    @media (max-width: 900px) {
+        .report-header {
+            flex-direction: column;
+        }
+
+        .report-meta-card,
+        .summary-grid,
+        .overview-detail,
+        .chart-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .pet-report-card {
+            grid-template-columns: 1fr;
+        }
+    }
+
     @media print {
-        .nav, .btn {
+        .no-print,
+        nav,
+        .navbar,
+        .site-nav {
             display: none !important;
         }
 
         body {
-            background: white;
+            background: #ffffff !important;
         }
 
-        .card {
-            box-shadow: none;
-            border: 1px solid #ddd;
+        .section-card,
+        .report-meta-card {
+            box-shadow: none !important;
+            border: 1px solid #eeeeee;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        .report-page {
+            padding-bottom: 0;
+        }
+
+        canvas {
+            max-height: 260px !important;
         }
     }
 </style>
-
-<h1>健康報告匯出</h1>
-<p class="muted">整合寵物基本資料、健康紀錄、就醫紀錄、提醒事項與 AI 建議。可使用瀏覽器列印或另存 PDF。</p>
-
-<button class="btn btn-brown" onclick="window.print()">列印 / 匯出 PDF</button>
-
-{% if pets %}
-    {% for pet in pets %}
-        <div class="card">
-            <h2>{{ pet.name }} 健康報告</h2>
-
-            <h3>基本資料</h3>
-            <p>
-                物種：{{ pet.species }}<br>
-                品種：{{ pet.breed or "未填寫" }}<br>
-                性別：{{ pet.gender or "未填寫" }}<br>
-                年齡：{{ pet.age or "未填寫" }}<br>
-                體重：{{ pet.weight or "未填寫" }} kg<br>
-                備註：{{ pet.note or "無" }}
-            </p>
-
-            <h3>健康紀錄</h3>
-            {% if pet.health_records %}
-                {% for record in pet.health_records %}
-                    <div class="record">
-                        日期：{{ record.record_date }}<br>
-                        體重：{{ record.weight or "未填寫" }} kg<br>
-                        食慾：{{ record.appetite or "未填寫" }}<br>
-                        活動量：{{ record.activity or "未填寫" }}<br>
-                        症狀：{{ record.symptoms or "無" }}<br>
-                        用藥：{{ record.medication or "無" }}
-                    </div>
-                {% endfor %}
-            {% else %}
-                <p class="muted">無健康紀錄。</p>
-            {% endif %}
-
-            <h3>就醫紀錄</h3>
-            {% if pet.medical_records %}
-                {% for record in pet.medical_records %}
-                    <div class="record">
-                        日期：{{ record.visit_date }}<br>
-                        診所：{{ record.clinic_name or "未填寫" }}<br>
-                        診斷：{{ record.diagnosis or "未填寫" }}<br>
-                        藥物：{{ record.medicine or "無" }}<br>
-                        醫囑：{{ record.doctor_advice or "無" }}
-                    </div>
-                {% endfor %}
-            {% else %}
-                <p class="muted">無就醫紀錄。</p>
-            {% endif %}
-
-            <h3>提醒事項</h3>
-            {% if pet.reminders %}
-                {% for reminder in pet.reminders %}
-                    <div class="record">
-                        類型：{{ reminder.reminder_type }}<br>
-                        日期：{{ reminder.reminder_date }}<br>
-                        狀態：{% if reminder.is_done %}已完成{% else %}待完成{% endif %}<br>
-                        備註：{{ reminder.note or "無" }}
-                    </div>
-                {% endfor %}
-            {% else %}
-                <p class="muted">無提醒事項。</p>
-            {% endif %}
-        </div>
-    {% endfor %}
-{% else %}
-    <div class="card">
-        <p class="muted">目前沒有寵物資料可以產生報告。</p>
-    </div>
-{% endif %}
-
-{% if ai_records %}
-<div class="card">
-    <h2>AI 諮詢紀錄</h2>
-    {% for record in ai_records %}
-        <div class="record">
-            時間：{{ record.created_at }}<br>
-            寵物：{{ record.pet_name }}<br>
-            症狀：{{ record.symptom }}<br>
-            風險：{{ record.risk_score }} 分｜{{ record.risk_level }}<br>
-            建議：<br>
-            <div style="white-space: pre-wrap;">{{ record.ai_answer }}</div>
-        </div>
-    {% endfor %}
-</div>
-{% endif %}
 
 {% endblock %}
