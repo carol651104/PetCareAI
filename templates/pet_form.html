@@ -10,16 +10,13 @@
 
 {% block content %}
 
-<!-- Cropper.js CSS -->
 <link
     rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css"
 />
 
 <div class="form-page">
-
     <div class="form-card">
-
         <h1>
             {% if mode == "edit" %}
                 編輯寵物資料
@@ -29,18 +26,17 @@
         </h1>
 
         <p class="muted">
-            請填寫寵物基本資料，並可上傳寵物照片。上傳照片後可以自行調整裁切範圍。
+            請填寫寵物基本資料，並可上傳寵物照片。選擇照片後，可透過拖曳、放大、縮小與旋轉來調整照片在固定框內的顯示範圍。
         </p>
 
         {% if mode == "edit" and pet and pet.photo_url %}
-            <div class="current-photo-box">
-                <p class="section-label">目前照片</p>
-                <img src="{{ pet.photo_url }}" alt="目前寵物照片" class="current-photo">
-            </div>
+        <div class="current-photo-box">
+            <p class="section-label">目前照片</p>
+            <img src="{{ pet.photo_url }}" alt="目前寵物照片" class="current-photo">
+        </div>
         {% endif %}
 
         <form method="POST" enctype="multipart/form-data" id="petForm">
-
             <div class="form-group">
                 <label for="name">寵物名稱 <span class="required">*</span></label>
                 <input
@@ -92,19 +88,19 @@
                     id="age"
                     name="age"
                     value="{{ pet.age if pet else '' }}"
-                    placeholder="例如：3、3.5、幼年、老年"
+                    placeholder="例如：4、4.5、幼年、老年"
                 >
             </div>
 
             <div class="form-group">
-                <label for="weight">體重 kg</label>
+                <label for="weight">體重 (kg)</label>
                 <input
                     type="number"
                     step="0.1"
                     id="weight"
                     name="weight"
                     value="{{ pet.weight if pet and pet.weight is not none else '' }}"
-                    placeholder="例如：4.5"
+                    placeholder="例如：20.0"
                 >
             </div>
 
@@ -117,7 +113,7 @@
                     accept="image/png, image/jpeg, image/jpg, image/gif, image/webp"
                 >
                 <p class="hint">
-                    選擇照片後，可以拖曳、縮放，調整想保留的範圍。
+                    選擇照片後，可以拖曳、縮放、調整想保留的範圍。
                 </p>
             </div>
 
@@ -136,7 +132,7 @@
                 </div>
 
                 <p class="hint">
-                    系統會依照你選擇的範圍產生正方形寵物照片，避免臉部或主體被自動切掉。
+                    系統會使用固定大小的正方形框框裁切照片。框框不能調整大小，你可以透過移動與縮放照片來對準想要的範圍。
                 </p>
             </div>
 
@@ -161,14 +157,10 @@
 
                 <a href="{{ url_for('pets') }}" class="btn secondary-btn">取消</a>
             </div>
-
         </form>
-
     </div>
-
 </div>
 
-<!-- Cropper.js JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
 
 <script>
@@ -184,17 +176,31 @@
 
     let cropper = null;
     let selectedFileName = "pet_photo.jpg";
-    let selectedFileType = "image/jpeg";
+
+    function setFixedCropBox() {
+        if (!cropper) return;
+
+        const containerData = cropper.getContainerData();
+
+        const cropSize = Math.min(containerData.width * 0.45, containerData.height * 0.75, 320);
+
+        const left = (containerData.width - cropSize) / 2;
+        const top = (containerData.height - cropSize) / 2;
+
+        cropper.setCropBoxData({
+            left: left,
+            top: top,
+            width: cropSize,
+            height: cropSize
+        });
+    }
 
     fileInput.addEventListener("change", function (event) {
         const file = event.target.files[0];
 
-        if (!file) {
-            return;
-        }
+        if (!file) return;
 
         selectedFileName = file.name || "pet_photo.jpg";
-        selectedFileType = file.type || "image/jpeg";
 
         const allowedTypes = [
             "image/png",
@@ -204,7 +210,7 @@
             "image/webp"
         ];
 
-        if (!allowedTypes.includes(selectedFileType)) {
+        if (!allowedTypes.includes(file.type)) {
             alert("照片格式不支援，請上傳 png、jpg、jpeg、gif 或 webp。");
             fileInput.value = "";
             return;
@@ -224,15 +230,26 @@
                 aspectRatio: 1,
                 viewMode: 1,
                 dragMode: "move",
-                autoCropArea: 0.85,
+                autoCrop: true,
+                autoCropArea: 0.6,
                 responsive: true,
                 background: false,
                 guides: true,
                 center: true,
+
                 movable: true,
                 zoomable: true,
                 rotatable: true,
-                scalable: false
+                scalable: false,
+
+                cropBoxMovable: false,
+                cropBoxResizable: false,
+
+                toggleDragModeOnDblclick: false,
+
+                ready() {
+                    setFixedCropBox();
+                }
             });
         };
 
@@ -240,31 +257,28 @@
     });
 
     zoomInBtn.addEventListener("click", function () {
-        if (cropper) {
-            cropper.zoom(0.1);
-        }
+        if (cropper) cropper.zoom(0.1);
     });
 
     zoomOutBtn.addEventListener("click", function () {
-        if (cropper) {
-            cropper.zoom(-0.1);
-        }
+        if (cropper) cropper.zoom(-0.1);
     });
 
     rotateLeftBtn.addEventListener("click", function () {
-        if (cropper) {
-            cropper.rotate(-90);
-        }
+        if (cropper) cropper.rotate(-90);
     });
 
     resetCropBtn.addEventListener("click", function () {
         if (cropper) {
             cropper.reset();
+            setTimeout(() => {
+                setFixedCropBox();
+            }, 50);
         }
     });
 
     petForm.addEventListener("submit", function (event) {
-        if (!cropper) {
+        if (!cropper || !fileInput.files.length) {
             return;
         }
 
@@ -305,7 +319,7 @@
     }
 
     .form-card {
-        width: min(760px, 92%);
+        width: min(780px, 92%);
         margin: 0 auto;
         background: #ffffff;
         border-radius: 22px;
@@ -381,8 +395,8 @@
     }
 
     .current-photo {
-        width: 150px;
-        height: 150px;
+        width: 160px;
+        height: 160px;
         border-radius: 18px;
         object-fit: cover;
         display: block;
@@ -398,16 +412,16 @@
 
     .crop-wrapper {
         width: 100%;
-        max-height: 420px;
+        height: 420px;
         background: #eef3ff;
         border-radius: 16px;
         overflow: hidden;
+        position: relative;
     }
 
     #cropImage {
         display: block;
         max-width: 100%;
-        max-height: 420px;
     }
 
     .crop-actions {
@@ -470,6 +484,10 @@
         .current-photo {
             width: 120px;
             height: 120px;
+        }
+
+        .crop-wrapper {
+            height: 320px;
         }
     }
 </style>
