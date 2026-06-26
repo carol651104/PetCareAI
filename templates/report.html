@@ -1176,14 +1176,16 @@
 
     @media print {
         @page {
-            size: A4;
-            margin: 12mm;
+            size: A4 portrait;
+            margin: 10mm;
         }
 
         html,
         body {
             background: #ffffff !important;
-            font-size: 11px;
+            font-size: 12px;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
 
         .no-print,
@@ -1196,161 +1198,277 @@
         }
 
         .report-page {
+            width: 100% !important;
+            max-width: 100% !important;
             padding: 0 !important;
-            margin: 0 !important;
+            margin: 0 auto !important;
             overflow: visible !important;
         }
 
         .report-header {
-            margin-bottom: 12px;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: flex-start !important;
+            margin-bottom: 16px !important;
+            page-break-after: avoid;
         }
 
         .report-header h1 {
-            font-size: 22px;
-            margin-bottom: 6px;
+            font-size: 26px !important;
+            color: #b66b36 !important;
+            margin-bottom: 6px !important;
+        }
+
+        .report-header .muted {
+            font-size: 12px !important;
+            color: #666666 !important;
         }
 
         .report-meta-card,
-        .section-card {
+        .section-card,
+        .pet-report-section {
+            background: #ffffff !important;
+            border: 1px solid #eeeeee !important;
+            border-radius: 18px !important;
             box-shadow: none !important;
-            border: 1px solid #eeeeee;
-            border-radius: 12px;
-            padding: 14px;
-            margin-bottom: 12px;
+            padding: 18px !important;
+            margin-bottom: 16px !important;
             overflow: visible !important;
-            break-inside: auto;
-            page-break-inside: auto;
-        }
-
-        .overview-card {
-            break-inside: avoid;
-            page-break-inside: avoid;
+            box-sizing: border-box !important;
         }
 
         .report-meta-card {
-            grid-template-columns: repeat(4, 1fr);
+            display: grid !important;
+            grid-template-columns: repeat(4, 1fr) !important;
+            gap: 12px !important;
+            background: #f6f8ff !important;
+        }
+
+        .section-card h2 {
+            font-size: 18px !important;
+            color: #b66b36 !important;
+            margin-bottom: 14px !important;
         }
 
         .summary-grid {
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 12px !important;
         }
 
         .summary-card,
         .mini-summary-card {
-            padding: 10px;
-            border-radius: 10px;
+            background: #f6f8ff !important;
+            border-radius: 14px !important;
+            padding: 14px !important;
+            text-align: center !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
         }
 
         .summary-card strong,
         .mini-summary-card strong {
-            font-size: 20px;
+            font-size: 26px !important;
+            color: #b66b36 !important;
+        }
+
+        .selected-pet-list {
+            background: #fffaf4 !important;
+            border-radius: 12px !important;
+            padding: 12px !important;
+            margin-top: 14px !important;
+        }
+
+        .pet-report-list {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 18px !important;
         }
 
         .pet-report-section {
-            border: 1px solid #eeeeee;
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 14px;
-            break-inside: avoid;
-            page-break-inside: avoid;
+            page-break-inside: auto !important;
+            break-inside: auto !important;
         }
 
         .pet-report-title {
-            padding-bottom: 8px;
-            margin-bottom: 10px;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            gap: 16px !important;
+            padding-bottom: 12px !important;
+            margin-bottom: 14px !important;
+            border-bottom: 1px solid #eeeeee !important;
+            page-break-after: avoid;
+        }
+
+        .pet-summary-left {
+            display: flex !important;
+            align-items: center !important;
+            gap: 14px !important;
         }
 
         .pet-report-thumb,
         .pet-report-thumb-placeholder {
-            width: 48px;
-            height: 48px;
-            border-radius: 10px;
-            font-size: 24px;
+            width: 64px !important;
+            height: 64px !important;
+            border-radius: 16px !important;
+            object-fit: cover !important;
+            background: #f6f8ff !important;
+        }
+
+        .pet-summary-left h3 {
+            font-size: 18px !important;
+            color: #b66b36 !important;
+            margin: 0 0 4px !important;
+        }
+
+        .pet-summary-left p,
+        .pet-summary-right {
+            font-size: 12px !important;
+            color: #666666 !important;
         }
 
         .pet-basic-card {
-            grid-template-columns: 90px 1fr;
-            padding: 10px;
-            gap: 12px;
-            margin-bottom: 10px;
+            display: grid !important;
+            grid-template-columns: 120px 1fr !important;
+            gap: 18px !important;
+            background: #f6f8ff !important;
+            border-radius: 16px !important;
+            padding: 16px !important;
+            margin-bottom: 16px !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
         }
 
         .pet-basic-photo,
         .pet-basic-placeholder {
-            width: 80px;
-            height: 80px;
-            border-radius: 10px;
-            font-size: 28px;
+            width: 110px !important;
+            height: 110px !important;
+            border-radius: 16px !important;
+            object-fit: cover !important;
+            background: #eef3ff !important;
         }
 
         .pet-overview-grid {
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
+            display: grid !important;
+            grid-template-columns: repeat(4, 1fr) !important;
+            gap: 12px !important;
+            margin-bottom: 16px !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
         }
 
         .overview-detail {
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 10px;
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 14px !important;
+            margin-bottom: 16px !important;
         }
 
         .overview-detail > div {
-            padding: 10px;
-            border-radius: 10px;
+            background: #fbfaf8 !important;
+            border-radius: 16px !important;
+            padding: 14px !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+        }
+
+        .chart-section {
+            margin-top: 16px !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
         }
 
         .chart-grid {
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-        }
-
-        .wide-chart {
-            grid-column: 1 / -1;
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 14px !important;
+            margin-top: 14px !important;
         }
 
         .chart-card {
-            padding: 10px;
-            border-radius: 10px;
+            background: #f6f8ff !important;
+            border-radius: 16px !important;
+            padding: 14px !important;
+            overflow: hidden !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+        }
+
+        .wide-chart {
+            grid-column: 1 / -1 !important;
         }
 
         .chart-canvas-wrap {
-            height: 150px !important;
+            height: 210px !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            overflow: hidden !important;
         }
 
         .chart-canvas-wrap.large-chart {
-            height: 160px !important;
+            height: 220px !important;
+        }
+
+        .chart-canvas-wrap canvas {
+            width: 100% !important;
+            height: 100% !important;
+            max-width: 100% !important;
         }
 
         .chart-empty-message {
-            min-height: 90px;
-            padding: 10px;
+            min-height: 130px !important;
+            background: #eef3ff !important;
+            border-radius: 14px !important;
+            color: #777777 !important;
+        }
+
+        .table-section {
+            margin-top: 16px !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+        }
+
+        table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            background: #ffffff !important;
+        }
+
+        th {
+            background: #f6f8ff !important;
+            color: #6a4a35 !important;
+            font-weight: 700 !important;
         }
 
         th,
         td {
-            padding: 5px 6px;
-            font-size: 10px;
-        }
-
-        .table-section,
-        .chart-section {
-            margin-top: 10px;
+            border-bottom: 1px solid #eeeeee !important;
+            padding: 8px 7px !important;
+            font-size: 11px !important;
+            line-height: 1.5 !important;
+            vertical-align: top !important;
         }
 
         .reminder-list {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 12px !important;
         }
 
         .mini-record {
-            padding: 8px;
-            border-radius: 10px;
+            background: #f6f8ff !important;
+            border-radius: 14px !important;
+            padding: 12px !important;
+            line-height: 1.6 !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
         }
 
         .disclaimer-card {
-            break-inside: avoid;
-            page-break-inside: avoid;
+            background: #fff8ef !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
         }
     }
 </style>
