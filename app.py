@@ -20,6 +20,7 @@ import re
 import cloudinary
 import cloudinary.uploader
 
+
 app = Flask(__name__)
 
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "petcareai-dev-secret-key")
@@ -46,9 +47,7 @@ login_manager.login_message = "請先登入後再使用此功能。"
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-cloudinary.config(
-    secure=True
-)
+cloudinary.config(secure=True)
 
 
 # =========================
@@ -148,9 +147,7 @@ def count_user_health_records():
     if not pet_ids:
         return 0
 
-    return HealthRecord.query.filter(
-        HealthRecord.pet_id.in_(pet_ids)
-    ).count()
+    return HealthRecord.query.filter(HealthRecord.pet_id.in_(pet_ids)).count()
 
 
 def count_user_medical_records():
@@ -158,9 +155,7 @@ def count_user_medical_records():
     if not pet_ids:
         return 0
 
-    return MedicalRecord.query.filter(
-        MedicalRecord.pet_id.in_(pet_ids)
-    ).count()
+    return MedicalRecord.query.filter(MedicalRecord.pet_id.in_(pet_ids)).count()
 
 
 def count_user_reminders():
@@ -168,9 +163,7 @@ def count_user_reminders():
     if not pet_ids:
         return 0
 
-    return Reminder.query.filter(
-        Reminder.pet_id.in_(pet_ids)
-    ).count()
+    return Reminder.query.filter(Reminder.pet_id.in_(pet_ids)).count()
 
 
 # =========================
@@ -572,7 +565,6 @@ def calculate_ai_risk_score(
         care_priority = risk_data.get("care_priority", "")
 
         score = max(0, min(score, 100))
-
         score = calibrate_ai_score(score, symptom)
         score, emergency_keywords = apply_emergency_guardrail(score, symptom)
 
@@ -755,17 +747,9 @@ def dashboard():
     pet_ids = [pet.id for pet in pets]
 
     if pet_ids:
-        total_health_records = HealthRecord.query.filter(
-            HealthRecord.pet_id.in_(pet_ids)
-        ).count()
-
-        total_medical_records = MedicalRecord.query.filter(
-            MedicalRecord.pet_id.in_(pet_ids)
-        ).count()
-
-        total_all_reminders = Reminder.query.filter(
-            Reminder.pet_id.in_(pet_ids)
-        ).count()
+        total_health_records = HealthRecord.query.filter(HealthRecord.pet_id.in_(pet_ids)).count()
+        total_medical_records = MedicalRecord.query.filter(MedicalRecord.pet_id.in_(pet_ids)).count()
+        total_all_reminders = Reminder.query.filter(Reminder.pet_id.in_(pet_ids)).count()
 
         total_pending_reminders = Reminder.query.filter(
             Reminder.pet_id.in_(pet_ids),
@@ -889,7 +873,6 @@ def health_trends():
                         "reminder": 0,
                         "total": 0,
                     }
-
                 care_trend_map[month_key]["health"] += 1
                 care_trend_map[month_key]["total"] += 1
 
@@ -904,7 +887,6 @@ def health_trends():
                         "reminder": 0,
                         "total": 0,
                     }
-
                 care_trend_map[month_key]["medical"] += 1
                 care_trend_map[month_key]["total"] += 1
 
@@ -919,24 +901,12 @@ def health_trends():
                         "reminder": 0,
                         "total": 0,
                     }
-
                 care_trend_map[month_key]["reminder"] += 1
                 care_trend_map[month_key]["total"] += 1
 
-        appetite_chart_data = [
-            {"label": key, "value": value}
-            for key, value in appetite_stats.items()
-        ]
-
-        activity_chart_data = [
-            {"label": key, "value": value}
-            for key, value in activity_stats.items()
-        ]
-
-        care_trend_data = [
-            care_trend_map[key]
-            for key in sorted(care_trend_map.keys())
-        ]
+        appetite_chart_data = [{"label": key, "value": value} for key, value in appetite_stats.items()]
+        activity_chart_data = [{"label": key, "value": value} for key, value in activity_stats.items()]
+        care_trend_data = [care_trend_map[key] for key in sorted(care_trend_map.keys())]
 
         pet_trend_data.append({
             "pet": pet,
@@ -969,6 +939,13 @@ def health_trends():
         total_reminders=total_reminders,
         total_care_records=total_care_records,
     )
+
+
+@app.route("/health_trends")
+@login_required
+def health_trends_alias():
+    return redirect(url_for("health_trends"))
+
 
 # =========================
 # 寵物資料 CRUD
@@ -1677,7 +1654,7 @@ AI 評分原因：
 
 
 # =========================
-# 健康報告：依寵物分組
+# 健康報告：可勾選寵物 / 圖表 / AI / 精簡版
 # =========================
 
 @app.route("/report")
@@ -1687,7 +1664,30 @@ def report():
         flash("健康報告匯出為 Premium 付費版功能，請先升級後再使用。")
         return redirect(url_for("pricing"))
 
-    pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
+    all_pets = Pet.query.filter_by(user_id=current_user.id).order_by(Pet.created_at.desc()).all()
+
+    has_query = len(request.args) > 0
+
+    selected_pet_ids_raw = request.args.getlist("pet_ids")
+
+    if not has_query:
+        selected_pet_ids = [pet.id for pet in all_pets]
+    else:
+        selected_pet_ids = []
+        for value in selected_pet_ids_raw:
+            try:
+                selected_pet_ids.append(int(value))
+            except Exception:
+                pass
+
+    include_charts = True if not has_query else request.args.get("include_charts") == "1"
+    include_ai = True if not has_query else request.args.get("include_ai") == "1"
+    compact_mode = True if not has_query else request.args.get("compact_mode") == "1"
+
+    selected_pets = [
+        pet for pet in all_pets
+        if pet.id in selected_pet_ids
+    ]
 
     pet_report_data = []
     pet_report_chart_data = []
@@ -1701,7 +1701,12 @@ def report():
     overall_highest_risk_score = 0
     overall_highest_risk_level = "無紀錄"
 
-    for pet in pets:
+    health_limit = 3 if compact_mode else 10
+    medical_limit = 2 if compact_mode else 5
+    reminder_limit = 3 if compact_mode else 10
+    ai_limit = 2 if compact_mode else 5
+
+    for pet in selected_pets:
         health_records = HealthRecord.query.filter_by(pet_id=pet.id).order_by(
             HealthRecord.record_date.desc(),
             HealthRecord.id.desc()
@@ -1731,6 +1736,7 @@ def report():
 
         latest_health_record = health_records[0] if health_records else None
         latest_medical_record = medical_records[0] if medical_records else None
+        latest_ai_record = ai_records[0] if ai_records else None
 
         total_health_records += len(health_records)
         total_medical_records += len(medical_records)
@@ -1781,6 +1787,7 @@ def report():
 
         for record in ai_records:
             score = record.risk_score or 0
+
             if score >= highest_risk_score:
                 highest_risk_score = score
                 highest_risk_level = record.risk_level or "未標示"
@@ -1797,11 +1804,14 @@ def report():
             "pending_reminders": pending_reminders,
             "done_reminders": done_reminders,
             "ai_records": ai_records,
-            "recent_health_records": health_records[:5],
-            "recent_medical_records": medical_records[:5],
-            "recent_ai_records": ai_records[:3],
+            "recent_health_records": health_records[:health_limit],
+            "recent_medical_records": medical_records[:medical_limit],
+            "recent_reminders": reminders[:reminder_limit],
+            "recent_pending_reminders": pending_reminders[:reminder_limit],
+            "recent_ai_records": ai_records[:ai_limit],
             "latest_health_record": latest_health_record,
             "latest_medical_record": latest_medical_record,
+            "latest_ai_record": latest_ai_record,
             "health_record_count": len(health_records),
             "medical_record_count": len(medical_records),
             "reminder_count": len(reminders),
@@ -1824,10 +1834,15 @@ def report():
 
     return render_template(
         "report.html",
-        pets=pets,
+        pets=all_pets,
+        selected_pets=selected_pets,
+        selected_pet_ids=selected_pet_ids,
         pet_report_data=pet_report_data,
         pet_report_chart_data=pet_report_chart_data,
-        total_pet_count=len(pets),
+        include_charts=include_charts,
+        include_ai=include_ai,
+        compact_mode=compact_mode,
+        total_pet_count=len(selected_pets),
         total_health_records=total_health_records,
         total_medical_records=total_medical_records,
         total_reminders=total_reminders,
