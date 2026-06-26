@@ -31,7 +31,7 @@
                 {% if pets %}
                     <div class="pet-checkbox-grid">
                         {% for pet in pets %}
-                            <label class="pet-checkbox-card">
+                            <label class="pet-select-card">
                                 <input
                                     type="checkbox"
                                     name="pet_ids"
@@ -39,16 +39,25 @@
                                     {% if pet.id in selected_pet_ids %}checked{% endif %}
                                 >
 
-                                {% if pet.photo_url %}
-                                    <img src="{{ pet.photo_url }}" alt="{{ pet.name }}">
-                                {% else %}
-                                    <span class="pet-placeholder">🐾</span>
-                                {% endif %}
+                                <div class="pet-select-left">
+                                    {% if pet.photo_url %}
+                                        <img src="{{ pet.photo_url }}" alt="{{ pet.name }}">
+                                    {% else %}
+                                        <span class="pet-placeholder">🐾</span>
+                                    {% endif %}
 
-                                <span>
-                                    <strong>{{ pet.name }}</strong>
-                                    <small>{{ pet.species }}{% if pet.breed %}｜{{ pet.breed }}{% endif %}</small>
-                                </span>
+                                    <div class="pet-select-info">
+                                        <strong>{{ pet.name }}</strong>
+                                        <small>
+                                            {{ pet.species }}
+                                            {% if pet.breed %}
+                                                ｜{{ pet.breed }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <span class="custom-check"></span>
                             </label>
                         {% endfor %}
                     </div>
@@ -61,28 +70,22 @@
                 <h3>報告內容</h3>
 
                 <div class="option-grid">
-                    <label class="option-card">
+                    <label class="option-select-card">
                         <input type="checkbox" name="include_charts" value="1" {% if include_charts %}checked{% endif %}>
-                        <span>
-                            <strong>包含圖表</strong>
-                            <small>顯示體重趨勢、健康狀態與照護統計。</small>
-                        </span>
+                        <span class="option-title">包含圖表</span>
+                        <span class="custom-check"></span>
                     </label>
 
-                    <label class="option-card">
+                    <label class="option-select-card">
                         <input type="checkbox" name="include_ai" value="1" {% if include_ai %}checked{% endif %}>
-                        <span>
-                            <strong>包含 AI 摘要</strong>
-                            <small>只顯示風險分數與症狀摘要，不放完整 AI 回覆。</small>
-                        </span>
+                        <span class="option-title">包含 AI 摘要</span>
+                        <span class="custom-check"></span>
                     </label>
 
-                    <label class="option-card">
+                    <label class="option-select-card">
                         <input type="checkbox" name="compact_mode" value="1" {% if compact_mode %}checked{% endif %}>
-                        <span>
-                            <strong>只顯示最近紀錄</strong>
-                            <small>以精簡版呈現，避免 PDF 過長。</small>
-                        </span>
+                        <span class="option-title">只顯示最近紀錄</span>
+                        <span class="custom-check"></span>
                     </label>
                 </div>
             </div>
@@ -684,26 +687,51 @@
 
     .pet-checkbox-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
         gap: 12px;
     }
 
-    .pet-checkbox-card,
-    .option-card {
+    .pet-select-card,
+    .option-select-card {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 14px 16px;
+        border: 1.5px solid #eeeeee;
+        cursor: pointer;
+        transition: 0.18s ease;
+        min-height: 74px;
+    }
+
+    .pet-select-card:hover,
+    .option-select-card:hover {
+        border-color: #8faeee;
+        box-shadow: 0 8px 20px rgba(143, 174, 238, 0.16);
+        transform: translateY(-1px);
+    }
+
+    .pet-select-card input,
+    .option-select-card input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .pet-select-left {
         display: flex;
         align-items: center;
         gap: 12px;
-        background: #ffffff;
-        border-radius: 16px;
-        padding: 14px;
-        border: 1px solid #eeeeee;
-        cursor: pointer;
+        min-width: 0;
     }
 
-    .pet-checkbox-card img,
+    .pet-select-left img,
     .pet-placeholder {
-        width: 52px;
-        height: 52px;
+        width: 54px;
+        height: 54px;
         border-radius: 14px;
         object-fit: cover;
         background: #f6f8ff;
@@ -714,23 +742,80 @@
         flex-shrink: 0;
     }
 
-    .pet-checkbox-card strong,
-    .option-card strong {
-        display: block;
-        color: #333333;
+    .pet-select-info {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
     }
 
-    .pet-checkbox-card small,
-    .option-card small {
-        display: block;
+    .pet-select-info strong {
+        color: #333333;
+        font-size: 0.98rem;
+        margin-bottom: 4px;
+    }
+
+    .pet-select-info small {
         color: #777777;
-        line-height: 1.5;
+        font-size: 0.82rem;
+        line-height: 1.4;
     }
 
     .option-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 12px;
+    }
+
+    .option-select-card {
+        min-height: 64px;
+    }
+
+    .option-title {
+        color: #333333;
+        font-weight: 700;
+        font-size: 0.96rem;
+    }
+
+    .custom-check {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 2px solid #d6d6d6;
+        background: #ffffff;
+        flex-shrink: 0;
+        position: relative;
+        transition: 0.18s ease;
+    }
+
+    .custom-check::after {
+        content: "";
+        position: absolute;
+        left: 8px;
+        top: 4px;
+        width: 7px;
+        height: 13px;
+        border: solid #ffffff;
+        border-width: 0 2.5px 2.5px 0;
+        transform: rotate(45deg) scale(0);
+        transition: 0.18s ease;
+    }
+
+    .pet-select-card input:checked ~ .custom-check,
+    .option-select-card input:checked ~ .custom-check {
+        background: #8faeee;
+        border-color: #8faeee;
+    }
+
+    .pet-select-card input:checked ~ .custom-check::after,
+    .option-select-card input:checked ~ .custom-check::after {
+        transform: rotate(45deg) scale(1);
+    }
+
+    .pet-select-card:has(input:checked),
+    .option-select-card:has(input:checked) {
+        border-color: #8faeee;
+        background: #f6f8ff;
+        box-shadow: 0 8px 20px rgba(143, 174, 238, 0.14);
     }
 
     .setting-actions {
@@ -1075,7 +1160,8 @@
         .pet-overview-grid,
         .overview-detail,
         .chart-grid,
-        .report-meta-card {
+        .report-meta-card,
+        .option-grid {
             grid-template-columns: 1fr;
         }
 
