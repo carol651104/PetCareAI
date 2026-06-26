@@ -55,9 +55,6 @@ cloudinary.config(secure=True)
 # =========================
 
 FREE_PET_LIMIT = 1
-FREE_HEALTH_RECORD_LIMIT = 10
-FREE_MEDICAL_RECORD_LIMIT = 5
-FREE_REMINDER_LIMIT = 5
 FREE_AI_LIMIT = 3
 
 
@@ -1124,11 +1121,6 @@ def health_records():
 def add_health_record(pet_id):
     pet = get_user_pet_or_404(pet_id)
 
-    if not is_premium_user():
-        if count_user_health_records() >= FREE_HEALTH_RECORD_LIMIT:
-            flash("免費版健康紀錄最多 10 筆，升級 Premium 後可新增不限筆數健康紀錄。")
-            return redirect(url_for("pricing"))
-
     if request.method == "POST":
         record = HealthRecord(
             pet_id=pet.id,
@@ -1228,11 +1220,6 @@ def medical_records():
 @login_required
 def add_medical_record(pet_id):
     pet = get_user_pet_or_404(pet_id)
-
-    if not is_premium_user():
-        if count_user_medical_records() >= FREE_MEDICAL_RECORD_LIMIT:
-            flash("免費版就醫紀錄最多 5 筆，升級 Premium 後可新增不限筆數就醫紀錄。")
-            return redirect(url_for("pricing"))
 
     if request.method == "POST":
         record = MedicalRecord(
@@ -1344,11 +1331,6 @@ def reminders():
 @login_required
 def add_reminder(pet_id):
     pet = get_user_pet_or_404(pet_id)
-
-    if not is_premium_user():
-        if count_user_reminders() >= FREE_REMINDER_LIMIT:
-            flash("免費版提醒事項最多 5 筆，升級 Premium 後可新增不限筆數提醒。")
-            return redirect(url_for("pricing"))
 
     if request.method == "POST":
         reminder = Reminder(
